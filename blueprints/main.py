@@ -33,7 +33,8 @@ def dashboard():
         'documents_published': documents_published,
         'open_non_conformities': open_non_conformities,
         'my_review_tasks': my_review_tasks,
-        'recent_audits': recent_audits
+        'recent_audits': recent_audits,
+        'last_update': datetime.now()
     }
     
     return render_template('dashboard.html', data=dashboard_data)
