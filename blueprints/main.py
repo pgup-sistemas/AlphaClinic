@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, jsonify
 from flask_login import login_required, current_user
-from models import Document, Audit, NonConformity, User, DocumentStatus
-from app import db
+from models import Document, Audit, NonConformity, User, DocumentStatus, db
 from sqlalchemy import func
 from datetime import datetime, timedelta
 

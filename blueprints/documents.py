@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from models import Document, DocumentFolder, DocumentVersion, DocumentAttachment, DocumentRead, DocumentStatus, Norm
-from app import db
+from models import Document, DocumentFolder, DocumentVersion, DocumentAttachment, DocumentRead, DocumentStatus, Norm, db
 import os
 from datetime import datetime
 

@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Documento - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    <i class="fas fa-edit mr-2 text-blue-600"></i>
+                    Editar Documento: {{ document.title }}
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                    Editor completo de documentos com controle de versões
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('documents.view', id=document.id) }}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" class="p-6 space-y-6">
+        <!-- CSRF token will be added when Flask-WTF is properly configured -->
+        <!-- Document metadata -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-heading mr-1"></i>
+                    Título do Documento *
+                </label>
+                <input type="text" 
+                       id="title" 
+                       name="title" 
+                       value="{{ document.title }}"
+                       required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label for="code" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-barcode mr-1"></i>
+                    Código do Documento
+                </label>
+                <input type="text" 
+                       id="code" 
+                       name="code"
+                       value="{{ document.code or '' }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-tags mr-1"></i>
+                    Categoria
+                </label>
+                <select id="category" 
+                        name="category"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Selecione uma categoria</option>
+                    <option value="procedimento" {% if document.category == 'procedimento' %}selected{% endif %}>Procedimento</option>
+                    <option value="instrucao" {% if document.category == 'instrucao' %}selected{% endif %}>Instrução de Trabalho</option>
+                    <option value="politica" {% if document.category == 'politica' %}selected{% endif %}>Política</option>
+                    <option value="manual" {% if document.category == 'manual' %}selected{% endif %}>Manual</option>
+                    <option value="formulario" {% if document.category == 'formulario' %}selected{% endif %}>Formulário</option>
+                    <option value="outros" {% if document.category == 'outros' %}selected{% endif %}>Outros</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="folder_id" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-folder mr-1"></i>
+                    Pasta
+                </label>
+                <select id="folder_id" 
+                        name="folder_id"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Sem pasta</option>
+                    {% for folder in folders %}
+                    <option value="{{ folder.id }}" {% if document.folder_id == folder.id %}selected{% endif %}>{{ folder.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Version control -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="text-md font-medium text-gray-900">
+                    <i class="fas fa-code-branch mr-1"></i>
+                    Controle de Versão
+                </h4>
+                <span class="text-sm text-gray-500">Versão atual: <strong>{{ document.version }}</strong></span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="create_new_version" value="true" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                        <span class="text-sm text-gray-700">Criar nova versão</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <select name="version_type" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <option value="minor">Alteração menor (x.Y)</option>
+                        <option value="major">Alteração maior (X.y)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <textarea name="change_notes" 
+                         placeholder="Descreva as alterações realizadas nesta versão..."
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm h-20 resize-none"
+                         rows="2"></textarea>
+            </div>
+        </div>
+
+        <!-- Associated norms -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-clipboard-list mr-1"></i>
+                Normas Associadas
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                {% for norm in norms %}
+                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input type="checkbox" 
+                           name="norm_ids" 
+                           value="{{ norm.id }}"
+                           {% if norm in document.norms %}checked{% endif %}
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm text-gray-700">{{ norm.name }} ({{ norm.code }})</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Rich text editor - CORAÇÃO DO SISTEMA -->
+        <div>
+            <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-edit mr-1"></i>
+                Conteúdo do Documento
+            </label>
+            <div class="border border-gray-300 rounded-md">
+                <textarea id="content" name="content" rows="25">{{ document.content or '' }}</textarea>
+            </div>
+            
+            <div class="mt-2 text-sm text-gray-500 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span><i class="fas fa-info-circle mr-1"></i>Editor WYSIWYG completo</span>
+                    <span><i class="fas fa-image mr-1"></i>Suporte a imagens</span>
+                    <span><i class="fas fa-table mr-1"></i>Tabelas avançadas</span>
+                    <span><i class="fas fa-link mr-1"></i>Links e mídia</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-500">
+                    <i class="fas fa-save mr-1"></i>
+                    Status: <strong>{{ document.status.value|title }}</strong>
+                </span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button type="button" 
+                        onclick="previewDocument()"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-eye mr-1"></i>
+                    Prévia
+                </button>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-save mr-1"></i>
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize TinyMCE Editor - ADVANCED CONFIGURATION
+tinymce.init({
+    selector: '#content',
+    height: 600,
+    plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'help', 'wordcount', 'pagebreak',
+        'print', 'save', 'directionality', 'nonbreaking', 'template', 'hr',
+        'codesample', 'emoticons', 'quickbars'
+    ],
+    toolbar1: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify',
+    toolbar2: 'outdent indent | numlist bullist checklist | link image media table | codesample hr pagebreak | template | code preview fullscreen',
+    toolbar3: 'searchreplace | insertdatetime | emoticons | save print | help',
+    
+    // Corporate environment settings
+    menubar: 'file edit view insert format tools table help',
+    contextmenu: 'link image table configurepermanentpen',
+    quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote quickimage quicktable',
+    quickbars_insert_toolbar: 'quickimage quicktable',
+    
+    // Content styling for professional documents
+    content_style: `
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-size: 12pt; 
+            line-height: 1.6;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20mm;
+            background-color: white;
+        }
+        h1 { 
+            color: #2563eb; 
+            border-bottom: 2px solid #2563eb; 
+            padding-bottom: 5px; 
+            font-size: 24pt;
+            margin-bottom: 20px;
+        }
+        h2 { 
+            color: #1e40af; 
+            border-bottom: 1px solid #1e40af; 
+            padding-bottom: 3px; 
+            font-size: 18pt;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+        h3 {
+            color: #1e3a8a;
+            font-size: 14pt;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            margin: 15px 0;
+            border: 1px solid #ddd;
+        }
+        table td, table th { 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            text-align: left;
+            vertical-align: top;
+        }
+        table th { 
+            background-color: #f8f9fa; 
+            font-weight: bold;
+            color: #333;
+        }
+        table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .page-break { 
+            page-break-before: always; 
+            border-top: 3px dashed #ddd;
+            margin: 30px 0;
+            padding-top: 30px;
+        }
+        blockquote {
+            border-left: 4px solid #2563eb;
+            padding-left: 15px;
+            margin-left: 0;
+            color: #666;
+            font-style: italic;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    `,
+    
+    // Image handling
+    image_advtab: true,
+    image_uploadtab: true,
+    file_picker_types: 'image',
+    images_upload_handler: function (blobInfo, success, failure, progress) {
+        // Simple base64 encoding for now - in production, upload to server
+        const reader = new FileReader();
+        reader.onload = function() {
+            success(reader.result);
+        };
+        reader.readAsDataURL(blobInfo.blob());
+    },
+    
+    // Table settings
+    table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+    table_appearance_options: true,
+    table_grid: true,
+    table_resize_bars: true,
+    table_default_attributes: {
+        border: '1',
+        cellpadding: '8',
+        cellspacing: '0'
+    },
+    table_default_styles: {
+        'border-collapse': 'collapse',
+        width: '100%'
+    },
+    
+    // Document templates for Alphaclin QMS
+    templates: [
+        {
+            title: 'Procedimento Operacional Padrão (POP)',
+            description: 'Template para procedimentos operacionais padrão',
+            content: `
+                <h1>PROCEDIMENTO OPERACIONAL PADRÃO</h1>
+                <h1>[NOME DO PROCEDIMENTO]</h1>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr><td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">Código:</td><td style="border: 1px solid #ddd; padding: 8px;">[CÓDIGO]</td></tr>
+                    <tr><td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">Versão:</td><td style="border: 1px solid #ddd; padding: 8px;">1.0</td></tr>
+                    <tr><td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">Data:</td><td style="border: 1px solid #ddd; padding: 8px;">[DATA]</td></tr>
+                    <tr><td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">Responsável:</td><td style="border: 1px solid #ddd; padding: 8px;">[RESPONSÁVEL]</td></tr>
+                </table>
+
+                <h2>1. OBJETIVO</h2>
+                <p>Descrever claramente o objetivo do procedimento...</p>
+
+                <h2>2. ESCOPO</h2>
+                <p>Definir o escopo de aplicação do procedimento...</p>
+
+                <h2>3. RESPONSABILIDADES</h2>
+                <p>Definir as responsabilidades de cada função envolvida...</p>
+
+                <h2>4. PROCEDIMENTO</h2>
+                <p>Descrever detalhadamente os passos do procedimento:</p>
+                <ol>
+                    <li>Primeiro passo...</li>
+                    <li>Segundo passo...</li>
+                    <li>Terceiro passo...</li>
+                </ol>
+
+                <h2>5. REGISTROS</h2>
+                <p>Especificar os registros necessários...</p>
+
+                <h2>6. ANEXOS</h2>
+                <p>Listar os anexos, se houver...</p>
+            `
+        },
+        {
+            title: 'Instrução de Trabalho',
+            description: 'Template para instruções de trabalho detalhadas',
+            content: `
+                <h1>INSTRUÇÃO DE TRABALHO</h1>
+                <h1>[NOME DA INSTRUÇÃO]</h1>
+
+                <h2>1. FINALIDADE</h2>
+                <p>Descrever a finalidade da instrução...</p>
+
+                <h2>2. APLICAÇÃO</h2>
+                <p>Definir onde e quando se aplica...</p>
+
+                <h2>3. DESCRIÇÃO DAS ATIVIDADES</h2>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="border: 1px solid #ddd; padding: 10px;">Passo</th>
+                            <th style="border: 1px solid #ddd; padding: 10px;">Atividade</th>
+                            <th style="border: 1px solid #ddd; padding: 10px;">Responsável</th>
+                            <th style="border: 1px solid #ddd; padding: 10px;">Registro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td style="border: 1px solid #ddd; padding: 8px;">1</td><td style="border: 1px solid #ddd; padding: 8px;">Primeira atividade</td><td style="border: 1px solid #ddd; padding: 8px;">Responsável</td><td style="border: 1px solid #ddd; padding: 8px;">Registro necessário</td></tr>
+                        <tr><td style="border: 1px solid #ddd; padding: 8px;">2</td><td style="border: 1px solid #ddd; padding: 8px;">Segunda atividade</td><td style="border: 1px solid #ddd; padding: 8px;">Responsável</td><td style="border: 1px solid #ddd; padding: 8px;">Registro necessário</td></tr>
+                    </tbody>
+                </table>
+            `
+        }
+    ],
+    
+    // Page format options
+    page_formats: 'A4=210x297mm;Letter=216x279mm;Legal=216x356mm',
+    
+    // Advanced features
+    browser_spellcheck: true,
+    contextmenu_never_use_native: true,
+    
+    // Autosave configuration
+    autosave_ask_before_unload: true,
+    autosave_interval: '60s',
+    autosave_prefix: 'alphaclin-qms-doc-{{ document.id }}',
+    
+    // Setup callback
+    setup: function (editor) {
+        editor.on('change', function () {
+            console.log('Conteúdo alterado - versão atual: {{ document.version }}');
+        });
+        
+        editor.on('init', function() {
+            console.log('TinyMCE inicializado para documento {{ document.id }}');
+        });
+    }
+});
+
+// Preview document function
+function previewDocument() {
+    const content = tinymce.get('content').getContent();
+    const title = document.getElementById('title').value;
+    
+    const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+    previewWindow.document.write(`
+        <html>
+        <head>
+            <title>Prévia: ${title}</title>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    line-height: 1.6; 
+                    margin: 40px; 
+                    background: #f5f5f5;
+                }
+                .document {
+                    background: white;
+                    padding: 40px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    max-width: 210mm;
+                    margin: 0 auto;
+                }
+                table { 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    margin: 15px 0; 
+                }
+                table td, table th { 
+                    border: 1px solid #ddd; 
+                    padding: 8px; 
+                }
+                table th { 
+                    background-color: #f2f2f2; 
+                }
+                h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 5px; }
+                h2 { color: #1e40af; border-bottom: 1px solid #1e40af; padding-bottom: 3px; }
+            </style>
+        </head>
+        <body>
+            <div class="document">
+                <h1>${title}</h1>
+                <p><strong>Código:</strong> ${document.getElementById('code').value || 'N/A'} | <strong>Versão:</strong> {{ document.version }}</p>
+                <hr>
+                ${content}
+            </div>
+        </body>
+        </html>
+    `);
+    
+    previewWindow.document.close();
+    previewWindow.focus();
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    // Update textarea with TinyMCE content before submit
+    tinymce.triggerSave();
+    
+    const title = document.getElementById('title').value.trim();
+    if (!title) {
+        e.preventDefault();
+        alert('O título do documento é obrigatório!');
+        document.getElementById('title').focus();
+        return false;
+    }
+    
+    const content = tinymce.get('content').getContent();
+    if (!content.trim()) {
+        e.preventDefault();
+        alert('O conteúdo do documento não pode estar vazio!');
+        return false;
+    }
+});
+</script>
+{% endblock %}

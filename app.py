@@ -5,10 +5,14 @@ from flask_login import LoginManager
 from config import Config
 import os
 
-# Initialize extensions
-db = SQLAlchemy()
+# Initialize extensions - import db from models to avoid duplicate instances
+from models import db
 migrate = Migrate()
 login_manager = LoginManager()
+
+# Import Flask-WTF for CSRF protection
+from flask_wtf.csrf import CSRFProtect
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
@@ -18,6 +22,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
     login_manager.login_view = 'auth.login'
     
     @login_manager.user_loader

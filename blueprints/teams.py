@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from models import Team, User, Document, DocumentRead
-from app import db
+from models import Team, User, Document, DocumentRead, db
 from datetime import datetime
 
 teams_bp = Blueprint('teams', __name__)

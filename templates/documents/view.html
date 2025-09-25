@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Document Header -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-file-alt text-2xl text-blue-600"></i>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900 truncate">
+                                {{ document.title }}
+                            </h1>
+                            {% if document.code %}
+                            <p class="text-sm text-gray-500">
+                                <i class="fas fa-barcode mr-1"></i>{{ document.code }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if document.status.value == 'draft' %}bg-gray-100 text-gray-800
+                        {% elif document.status.value == 'review' %}bg-yellow-100 text-yellow-800
+                        {% elif document.status.value == 'published' %}bg-green-100 text-green-800
+                        {% elif document.status.value == 'archived' %}bg-red-100 text-red-800
+                        {% endif %}">
+                        {% if document.status.value == 'draft' %}<i class="fas fa-edit mr-1"></i>Rascunho
+                        {% elif document.status.value == 'review' %}<i class="fas fa-clock mr-1"></i>Em Revisão
+                        {% elif document.status.value == 'published' %}<i class="fas fa-check-circle mr-1"></i>Publicado
+                        {% elif document.status.value == 'archived' %}<i class="fas fa-archive mr-1"></i>Arquivado
+                        {% endif %}
+                    </span>
+                    
+                    {% if document.created_by_id == current_user.id or current_user.role.value in ['admin', 'manager'] %}
+                    <a href="{{ url_for('documents.edit', id=document.id) }}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-edit mr-1"></i> Editar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Info -->
+        <div class="px-6 py-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Versão</dt>
+                    <dd class="mt-1 text-sm text-gray-900 font-mono">{{ document.version }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Criado por</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ document.creator.full_name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Data de criação</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ document.created_at.strftime('%d/%m/%Y às %H:%M') }}</dd>
+                </div>
+                {% if document.category %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Categoria</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ document.category }}</dd>
+                </div>
+                {% endif %}
+                {% if document.folder %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Pasta</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ document.folder.name }}</dd>
+                </div>
+                {% endif %}
+                {% if document.norms %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Normas Associadas</dt>
+                    <dd class="mt-1">
+                        {% for norm in document.norms %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-1">
+                            {{ norm.name }} ({{ norm.code }})
+                        </span>
+                        {% endfor %}
+                    </dd>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Actions -->
+    {% if document.status.value in ['draft', 'review'] and (document.created_by_id == current_user.id or current_user.role.value in ['admin', 'manager', 'reviewer']) %}
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">
+            <i class="fas fa-route mr-2"></i>Ações do Workflow
+        </h3>
+        
+        <div class="flex flex-wrap gap-3">
+            {% if document.status.value == 'draft' %}
+                <form method="POST" action="{{ url_for('documents.workflow_action', id=document.id, action='submit_for_review') }}" class="inline">
+                    <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-paper-plane mr-1"></i> Enviar para Revisão
+                    </button>
+                </form>
+            {% elif document.status.value == 'review' and current_user.id == document.reviewed_by_id %}
+                <form method="POST" action="{{ url_for('documents.workflow_action', id=document.id, action='approve') }}" class="inline">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-check mr-1"></i> Aprovar e Publicar
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('documents.workflow_action', id=document.id, action='reject') }}" class="inline">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-times mr-1"></i> Rejeitar
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Document Content -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">
+                    <i class="fas fa-file-text mr-2"></i>Conteúdo do Documento
+                </h3>
+                <div class="flex items-center space-x-2">
+                    {% if document.status.value == 'published' %}
+                    <button type="button" id="confirm-read-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-check-circle mr-1"></i> Confirmar Leitura
+                    </button>
+                    <button type="button" onclick="printDocument()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-print mr-1"></i> Imprimir
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-6">
+            <div class="prose max-w-none" id="document-content">
+                {{ document.content|safe }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Document History/Versions -->
+    {% if document.versions %}
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">
+                <i class="fas fa-history mr-2"></i>Histórico de Versões
+            </h3>
+        </div>
+        <div class="px-6 py-4">
+            <div class="space-y-4">
+                {% for version in document.versions[-5:] %}
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <span class="font-mono text-sm font-medium">v{{ version.version }}</span>
+                            <span class="text-sm text-gray-500">por {{ version.created_by.full_name }}</span>
+                            <span class="text-sm text-gray-400">{{ version.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                        {% if version.change_notes %}
+                        <p class="text-sm text-gray-600 mt-1">{{ version.change_notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Confirm document read
+document.getElementById('confirm-read-btn')?.addEventListener('click', function() {
+    if (confirm('Confirmar que você leu este documento?')) {
+        fetch('{{ url_for("documents.confirm_read", id=document.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+});
+
+// Print document
+function printDocument() {
+    const printWindow = window.open('', '_blank');
+    const content = document.getElementById('document-content').innerHTML;
+    
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>{{ document.title }}</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
+                table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+                table td, table th { border: 1px solid #ddd; padding: 8px; }
+                table th { background-color: #f2f2f2; }
+                h1, h2, h3 { color: #333; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <h1>{{ document.title }}</h1>
+            <p><strong>Código:</strong> {{ document.code or 'N/A' }} | <strong>Versão:</strong> {{ document.version }}</p>
+            <hr>
+            ${content}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+</script>
+{% endblock %}

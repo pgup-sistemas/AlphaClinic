@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from models import Audit, NonConformity, Norm, User, AuditType
-from app import db
+from models import Audit, NonConformity, Norm, User, AuditType, db
 from datetime import datetime
 
 audits_bp = Blueprint('audits', __name__)
