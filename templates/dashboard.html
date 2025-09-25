@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <p class="text-gray-600">Visão geral das atividades do sistema</p>
+            </div>
+            <div class="text-sm text-gray-500">
+                <i class="fas fa-clock mr-1"></i>
+                Atualizado em <span id="last-update">{{ moment().format('DD/MM/YYYY HH:mm') }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Documentos -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-file-alt text-2xl text-blue-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Total de Documentos
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.total_documents }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentos em Revisão -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-edit text-2xl text-yellow-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Em Revisão
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.documents_in_review }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentos Publicados -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-2xl text-green-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Publicados
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.documents_published }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Não Conformidades Abertas -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                NC Abertas
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.open_non_conformities }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Minhas Tarefas -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <i class="fas fa-tasks mr-2 text-blue-600"></i>
+                    Minhas Tarefas
+                </h3>
+                <div class="space-y-4">
+                    {% if data.my_review_tasks %}
+                        {% for document in data.my_review_tasks %}
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Revisão
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {{ document.title }}
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        Criado por {{ document.creator.full_name }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="{{ url_for('documents.view', id=document.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                    Ver
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-8">
+                            <i class="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                            <p class="text-gray-500">Nenhuma tarefa pendente!</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if data.my_review_tasks %}
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('documents.index', status='review') }}" 
+                       class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                        Ver todos os documentos em revisão →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Atividades Recentes -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <i class="fas fa-history mr-2 text-green-600"></i>
+                    Auditorias Recentes
+                </h3>
+                <div class="space-y-4">
+                    {% if data.recent_audits %}
+                        {% for audit in data.recent_audits %}
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if audit.status == 'completed' %}bg-green-100 text-green-800
+                                        {% elif audit.status == 'in_progress' %}bg-blue-100 text-blue-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ audit.status|title }}
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {{ audit.title }}
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        {% if audit.norm %}{{ audit.norm.name }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="{{ url_for('audits.view', id=audit.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                    Ver
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-8">
+                            <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-500">Nenhuma auditoria recente</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if data.recent_audits %}
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('audits.index') }}" 
+                       class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                        Ver todas as auditorias →
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                <i class="fas fa-rocket mr-2 text-purple-600"></i>
+                Ações Rápidas
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="{{ url_for('documents.create') }}" 
+                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="text-center">
+                        <i class="fas fa-plus-circle text-2xl text-blue-600 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-900">Novo Documento</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('audits.create') }}" 
+                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="text-center">
+                        <i class="fas fa-search-plus text-2xl text-green-600 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-900">Nova Auditoria</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('norms.create') }}" 
+                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="text-center">
+                        <i class="fas fa-clipboard-check text-2xl text-yellow-600 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-900">Nova Norma</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('teams.create') }}" 
+                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="text-center">
+                        <i class="fas fa-user-friends text-2xl text-purple-600 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-900">Nova Equipe</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh dashboard metrics every 5 minutes
+setInterval(function() {
+    fetch('{{ url_for("main.dashboard_metrics") }}')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('last-update').textContent = new Date().toLocaleString('pt-BR');
+            // Update metrics if needed
+        })
+        .catch(error => console.error('Error refreshing metrics:', error));
+}, 300000);
+</script>
+{% endblock %}
