@@ -1,0 +1,118 @@
+
+{% extends "base.html" %}
+
+{% block title %}Auditorias - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Auditorias</h1>
+            <p class="mt-2 text-gray-600">Gerencie auditorias internas e externas</p>
+        </div>
+        <a href="{{ url_for('audits.create') }}" class="bg-alphaclin-blue hover:bg-alphaclin-dark text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i>Nova Auditoria
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <form method="GET" class="flex flex-wrap gap-4 items-center">
+            <div>
+                <select name="type" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                    <option value="">Todos os Tipos</option>
+                    <option value="internal" {% if request.args.get('type') == 'internal' %}selected{% endif %}>Interna</option>
+                    <option value="external" {% if request.args.get('type') == 'external' %}selected{% endif %}>Externa</option>
+                </select>
+            </div>
+            <div>
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                    <option value="">Todos os Status</option>
+                    <option value="planned" {% if request.args.get('status') == 'planned' %}selected{% endif %}>Planejada</option>
+                    <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>Em Andamento</option>
+                    <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Concluída</option>
+                </select>
+            </div>
+            <div>
+                <select name="norm_id" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                    <option value="">Todas as Normas</option>
+                    {% for norm in norms %}
+                    <option value="{{ norm.id }}" {% if request.args.get('norm_id') == norm.id|string %}selected{% endif %}>{{ norm.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                <i class="fas fa-filter mr-1"></i>Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Audits List -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Lista de Auditorias</h3>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for audit in audits %}
+            <div class="px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if audit.audit_type.value == 'internal' %}bg-blue-100 text-blue-800
+                                {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                {% if audit.audit_type.value == 'internal' %}Interna{% else %}Externa{% endif %}
+                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if audit.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif audit.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if audit.status == 'planned' %}Planejada
+                                {% elif audit.status == 'in_progress' %}Em Andamento
+                                {% elif audit.status == 'completed' %}Concluída
+                                {% else %}{{ audit.status|title }}{% endif %}
+                            </span>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900 mt-1">{{ audit.title }}</h4>
+                        <div class="mt-2 flex items-center space-x-4 text-sm text-gray-600">
+                            {% if audit.norm %}
+                            <span><i class="fas fa-clipboard-list mr-1"></i>{{ audit.norm.name }}</span>
+                            {% endif %}
+                            {% if audit.planned_date %}
+                            <span><i class="fas fa-calendar mr-1"></i>{{ audit.planned_date.strftime('%d/%m/%Y') }}</span>
+                            {% endif %}
+                            {% if audit.assigned_auditor %}
+                            <span><i class="fas fa-user mr-1"></i>{{ audit.assigned_auditor.full_name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900">{{ audit.progress_percentage }}%</div>
+                            <div class="w-20 bg-gray-200 rounded-full h-2">
+                                <div class="bg-alphaclin-blue h-2 rounded-full" style="width: {{ audit.progress_percentage }}%"></div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('audits.view', id=audit.id) }}" class="text-alphaclin-blue hover:text-alphaclin-dark">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if not audits %}
+    <div class="text-center py-12">
+        <i class="fas fa-search text-gray-400 text-6xl mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma auditoria encontrada</h3>
+        <p class="text-gray-600 mb-6">Comece criando sua primeira auditoria.</p>
+        <a href="{{ url_for('audits.create') }}" class="bg-alphaclin-blue hover:bg-alphaclin-dark text-white px-6 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i>Nova Auditoria
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

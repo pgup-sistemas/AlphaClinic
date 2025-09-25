@@ -1,0 +1,88 @@
+
+{% extends "base.html" %}
+
+{% block title %}Normas - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Normas e Acreditações</h1>
+            <p class="mt-2 text-gray-600">Gerencie normas ISO, acreditações e regulamentações</p>
+        </div>
+        <a href="{{ url_for('norms.create') }}" class="bg-alphaclin-blue hover:bg-alphaclin-dark text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i>Nova Norma
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <form method="GET" class="flex flex-wrap gap-4 items-center">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                       placeholder="Buscar por nome ou código..." 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+            </div>
+            <div>
+                <select name="active" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                    <option value="true" {% if request.args.get('active', 'true') == 'true' %}selected{% endif %}>Apenas Ativas</option>
+                    <option value="false" {% if request.args.get('active') == 'false' %}selected{% endif %}>Todas</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                <i class="fas fa-search mr-1"></i>Buscar
+            </button>
+        </form>
+    </div>
+
+    <!-- Norms Grid -->
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for norm in norms %}
+        <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+            <div class="p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ norm.name }}</h3>
+                        <p class="text-sm text-gray-600 mt-1">{{ norm.code }}</p>
+                        {% if norm.description %}
+                        <p class="text-sm text-gray-500 mt-2">{{ norm.description[:100] }}{% if norm.description|length > 100 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                    <span class="{% if norm.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} px-2 py-1 rounded-full text-xs font-medium">
+                        {% if norm.is_active %}Ativa{% else %}Inativa{% endif %}
+                    </span>
+                </div>
+                
+                <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+                    <div>
+                        {% if norm.version %}
+                        <span class="bg-gray-100 px-2 py-1 rounded text-xs">v{{ norm.version }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('norms.view', id=norm.id) }}" class="text-alphaclin-blue hover:text-alphaclin-dark">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('norms.edit', id=norm.id) }}" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not norms %}
+    <div class="text-center py-12">
+        <i class="fas fa-clipboard-list text-gray-400 text-6xl mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma norma encontrada</h3>
+        <p class="text-gray-600 mb-6">Comece criando sua primeira norma ou acreditação.</p>
+        <a href="{{ url_for('norms.create') }}" class="bg-alphaclin-blue hover:bg-alphaclin-dark text-white px-6 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i>Nova Norma
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

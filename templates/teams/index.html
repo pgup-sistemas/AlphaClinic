@@ -1,0 +1,110 @@
+
+{% extends "base.html" %}
+
+{% block title %}Equipes - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Equipes</h1>
+            <p class="mt-2 text-gray-600">Gerencie equipes e colaboradores</p>
+        </div>
+        <a href="{{ url_for('teams.create') }}" class="bg-alphaclin-blue hover:bg-alphaclin-dark text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i>Nova Equipe
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <form method="GET" class="flex flex-wrap gap-4 items-center">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}" 
+                       placeholder="Buscar equipes..." 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+            </div>
+            <div>
+                <select name="active" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                    <option value="true" {% if request.args.get('active', 'true') == 'true' %}selected{% endif %}>Apenas Ativas</option>
+                    <option value="false" {% if request.args.get('active') == 'false' %}selected{% endif %}>Todas</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                <i class="fas fa-search mr-1"></i>Buscar
+            </button>
+        </form>
+    </div>
+
+    <!-- Teams Grid -->
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for team in teams %}
+        <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+            <div class="p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ team.name }}</h3>
+                        {% if team.description %}
+                        <p class="text-sm text-gray-500 mt-2">{{ team.description[:100] }}{% if team.description|length > 100 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                    <span class="{% if team.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} px-2 py-1 rounded-full text-xs font-medium">
+                        {% if team.is_active %}Ativa{% else %}Inativa{% endif %}
+                    </span>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-users mr-2"></i>
+                        <span>{{ team.members|length }} membro{% if team.members|length != 1 %}s{% endif %}</span>
+                    </div>
+                    
+                    {% if team.members %}
+                    <div class="flex -space-x-2 mt-3">
+                        {% for member in team.members[:5] %}
+                        <div class="w-8 h-8 rounded-full bg-alphaclin-blue text-white flex items-center justify-center text-xs font-medium ring-2 ring-white">
+                            {{ member.full_name.split()[0][0] }}{% if member.full_name.split()|length > 1 %}{{ member.full_name.split()[1][0] }}{% endif %}
+                        </div>
+                        {% endfor %}
+                        {% if team.members|length > 5 %}
+                        <div class="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-medium ring-2 ring-white">
+                            +{{ team.members|length - 5 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-6 flex items-center justify-between">
+                    <div class="text-xs text-gray-500">
+                        Criada em {{ team.created_at.strftime('%d/%m/%Y') }}
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('teams.view', id=team.id) }}" class="text-alphaclin-blue hover:text-alphaclin-dark">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('teams.edit', id=team.id) }}" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('teams.send_documents', id=team.id) }}" class="text-green-600 hover:text-green-800" title="Enviar Documentos">
+                            <i class="fas fa-paper-plane"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not teams %}
+    <div class="text-center py-12">
+        <i class="fas fa-users text-gray-400 text-6xl mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma equipe encontrada</h3>
+        <p class="text-gray-600 mb-6">Comece criando sua primeira equipe.</p>
+        <a href="{{ url_for('teams.create') }}" class="bg-alphaclin-blue hover:bg-alphaclin-dark text-white px-6 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i>Nova Equipe
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
