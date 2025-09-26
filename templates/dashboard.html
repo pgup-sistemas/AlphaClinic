@@ -261,7 +261,9 @@ setInterval(function() {
     fetch('{{ url_for("main.dashboard_metrics") }}')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('last-update').textContent = new Date().toLocaleString('pt-BR');
+            if (data.last_update) {
+                document.getElementById('last-update').textContent = data.last_update;
+            }
             // Update metrics if needed
         })
         .catch(error => console.error('Error refreshing metrics:', error));

@@ -39,22 +39,6 @@ def dashboard():
     
     return render_template('dashboard.html', data=dashboard_data)
 
-@main_bp.route('/dashboard/metrics')
-@login_required
-def dashboard_metrics():
-    """API endpoint for refreshing dashboard metrics"""
-    from models import Document, Audit, NonConformity
-    
-    metrics = {
-        'total_documents': Document.query.count(),
-        'documents_in_review': Document.query.filter_by(status='review').count(),
-        'documents_published': Document.query.filter_by(status='published').count(),
-        'open_non_conformities': NonConformity.query.filter(NonConformity.status.in_(['open', 'in_progress'])).count(),
-        'last_update': datetime.now().strftime('%d/%m/%Y %H:%M')
-    }
-    
-    return jsonify(metrics)
-
 @main_bp.route('/api/dashboard-metrics')
 @login_required
 def dashboard_metrics():
@@ -73,10 +57,16 @@ def dashboard_metrics():
     # User activity metrics
     active_users = User.query.filter(User.last_login >= thirty_days_ago).count()
     
+    # Simple metrics for dashboard refresh
     metrics = {
+        'total_documents': Document.query.count(),
+        'documents_in_review': Document.query.filter_by(status=DocumentStatus.REVIEW).count(),
+        'documents_published': Document.query.filter_by(status=DocumentStatus.PUBLISHED).count(),
+        'open_non_conformities': NonConformity.query.filter(NonConformity.status.in_(['open', 'in_progress'])).count(),
         'document_stats': [{'status': status.value, 'count': count} for status, count in document_stats],
         'recent_audits': recent_audits,
         'active_users': active_users,
+        'last_update': datetime.now().strftime('%d/%m/%Y %H:%M'),
         'timestamp': datetime.utcnow().isoformat()
     }
     
