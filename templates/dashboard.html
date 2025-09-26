@@ -13,7 +13,7 @@
             </div>
             <div class="text-sm text-gray-500">
                 <i class="fas fa-clock mr-1"></i>
-                Atualizado em <span id="last-update">{{ moment().format('DD/MM/YYYY HH:mm') }}</span>
+                Atualizado em <span id="last-update">{{ data.last_update if data.last_update else '' }}</span>
             </div>
         </div>
     </div>
