@@ -1,0 +1,123 @@
+
+{% extends "base.html" %}
+
+{% block title %}Não Conformidades - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Não Conformidades</h1>
+            <p class="mt-2 text-gray-600">Gerencie não conformidades e ações corretivas</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ url_for('nonconformities.dashboard') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-chart-bar mr-2"></i>Dashboard
+            </a>
+            <a href="{{ url_for('nonconformities.create') }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>Nova NC
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <form method="GET" class="flex flex-wrap gap-4 items-center">
+            <div>
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="">Todos os Status</option>
+                    <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>Aberta</option>
+                    <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>Em Progresso</option>
+                    <option value="resolved" {% if request.args.get('status') == 'resolved' %}selected{% endif %}>Resolvida</option>
+                    <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>Fechada</option>
+                </select>
+            </div>
+            <div>
+                <select name="severity" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="">Todas as Severidades</option>
+                    <option value="critical" {% if request.args.get('severity') == 'critical' %}selected{% endif %}>Crítica</option>
+                    <option value="major" {% if request.args.get('severity') == 'major' %}selected{% endif %}>Maior</option>
+                    <option value="minor" {% if request.args.get('severity') == 'minor' %}selected{% endif %}>Menor</option>
+                </select>
+            </div>
+            <div>
+                <select name="assigned_to" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="">Todos os Responsáveis</option>
+                    {% for user in users %}
+                    <option value="{{ user.id }}" {% if request.args.get('assigned_to') == user.id|string %}selected{% endif %}>{{ user.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                <i class="fas fa-filter mr-1"></i>Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Non-Conformities List -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        {% if non_conformities %}
+        <div class="divide-y divide-gray-200">
+            {% for nc in non_conformities %}
+            <div class="px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if nc.severity == 'critical' %}bg-red-100 text-red-800
+                                {% elif nc.severity == 'major' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ nc.severity|title }}
+                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if nc.status == 'resolved' %}bg-green-100 text-green-800
+                                {% elif nc.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                                {% elif nc.status == 'closed' %}bg-gray-100 text-gray-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if nc.status == 'open' %}Aberta
+                                {% elif nc.status == 'in_progress' %}Em Progresso
+                                {% elif nc.status == 'resolved' %}Resolvida
+                                {% elif nc.status == 'closed' %}Fechada
+                                {% else %}{{ nc.status|title }}{% endif %}
+                            </span>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900 mt-1">{{ nc.title }}</h4>
+                        <p class="text-sm text-gray-600 mt-1">{{ nc.description[:150] }}{% if nc.description|length > 150 %}...{% endif %}</p>
+                        <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                            <span><i class="fas fa-calendar mr-1"></i>{{ nc.identified_date.strftime('%d/%m/%Y') }}</span>
+                            {% if nc.assigned_to %}
+                            <span><i class="fas fa-user mr-1"></i>{{ nc.assigned_to.full_name }}</span>
+                            {% endif %}
+                            {% if nc.target_resolution_date %}
+                            <span class="{% if nc.target_resolution_date < (moment().date() if moment else now().date()) and nc.status in ['open', 'in_progress'] %}text-red-600{% endif %}">
+                                <i class="fas fa-clock mr-1"></i>Meta: {{ nc.target_resolution_date.strftime('%d/%m/%Y') }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ url_for('nonconformities.view', id=nc.id) }}" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-check-circle text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma não conformidade encontrada</h3>
+            <p class="text-gray-600 mb-6">
+                {% if request.args.get('status') or request.args.get('severity') or request.args.get('assigned_to') %}
+                Tente ajustar os filtros para ver mais resultados.
+                {% else %}
+                Ótimo! Não há não conformidades registradas no momento.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

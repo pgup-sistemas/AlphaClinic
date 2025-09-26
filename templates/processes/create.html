@@ -1,0 +1,221 @@
+
+{% extends "base.html" %}
+
+{% block title %}Novo Processo - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow rounded-lg">
+    <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    <i class="fas fa-plus-circle mr-2 text-blue-600"></i>
+                    Novo Processo
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                    Mapear novo processo organizacional
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('processes.index') }}" 
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" class="p-6 space-y-8">
+        <!-- Basic Info -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Nome do Processo *
+                </label>
+                <input type="text" id="name" name="name" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label for="code" class="block text-sm font-medium text-gray-700 mb-2">
+                    Código do Processo
+                </label>
+                <input type="text" id="code" name="code"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
+
+        <div>
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                Descrição
+            </label>
+            <textarea id="description" name="description" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+        </div>
+
+        <!-- Associated Norms -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-clipboard-list mr-1"></i>
+                Normas Associadas
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-md max-h-40 overflow-y-auto">
+                {% for norm in norms %}
+                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input type="checkbox" 
+                           name="norm_ids" 
+                           value="{{ norm.id }}"
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm text-gray-700">{{ norm.name }} ({{ norm.code }})</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Inputs -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-sign-in-alt mr-1"></i>
+                Entradas do Processo
+            </label>
+            <div id="inputs-container" class="space-y-3">
+                <div class="input-row grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-md">
+                    <input type="text" name="input_name[]" placeholder="Nome da entrada" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="input_description[]" placeholder="Descrição" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="button" onclick="addInputRow()" class="mt-2 text-blue-600 hover:text-blue-800 text-sm">
+                <i class="fas fa-plus mr-1"></i>Adicionar entrada
+            </button>
+        </div>
+
+        <!-- Outputs -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-sign-out-alt mr-1"></i>
+                Saídas do Processo
+            </label>
+            <div id="outputs-container" class="space-y-3">
+                <div class="output-row grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-md">
+                    <input type="text" name="output_name[]" placeholder="Nome da saída" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="output_description[]" placeholder="Descrição" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="button" onclick="addOutputRow()" class="mt-2 text-blue-600 hover:text-blue-800 text-sm">
+                <i class="fas fa-plus mr-1"></i>Adicionar saída
+            </button>
+        </div>
+
+        <!-- Responsibilities -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-users mr-1"></i>
+                Responsabilidades
+            </label>
+            <div id="responsibilities-container" class="space-y-3">
+                <div class="resp-row grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-md">
+                    <input type="text" name="resp_role[]" placeholder="Função/Cargo" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="resp_description[]" placeholder="Responsabilidade" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="button" onclick="addRespRow()" class="mt-2 text-blue-600 hover:text-blue-800 text-sm">
+                <i class="fas fa-plus mr-1"></i>Adicionar responsabilidade
+            </button>
+        </div>
+
+        <!-- Risks -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                Riscos Identificados
+            </label>
+            <div id="risks-container" class="space-y-3">
+                <div class="risk-row grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-gray-200 rounded-md">
+                    <input type="text" name="risk_name[]" placeholder="Nome do risco" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="risk_description[]" placeholder="Descrição" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" name="risk_mitigation[]" placeholder="Mitigação" 
+                           class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <button type="button" onclick="addRiskRow()" class="mt-2 text-blue-600 hover:text-blue-800 text-sm">
+                <i class="fas fa-plus mr-1"></i>Adicionar risco
+            </button>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end pt-6 border-t border-gray-200">
+            <div class="flex items-center space-x-3">
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-save mr-1"></i>
+                    Salvar Processo
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function addInputRow() {
+    const container = document.getElementById('inputs-container');
+    const div = document.createElement('div');
+    div.className = 'input-row grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-md';
+    div.innerHTML = `
+        <input type="text" name="input_name[]" placeholder="Nome da entrada" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="input_description[]" placeholder="Descrição" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    `;
+    container.appendChild(div);
+}
+
+function addOutputRow() {
+    const container = document.getElementById('outputs-container');
+    const div = document.createElement('div');
+    div.className = 'output-row grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-md';
+    div.innerHTML = `
+        <input type="text" name="output_name[]" placeholder="Nome da saída" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="output_description[]" placeholder="Descrição" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    `;
+    container.appendChild(div);
+}
+
+function addRespRow() {
+    const container = document.getElementById('responsibilities-container');
+    const div = document.createElement('div');
+    div.className = 'resp-row grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border border-gray-200 rounded-md';
+    div.innerHTML = `
+        <input type="text" name="resp_role[]" placeholder="Função/Cargo" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="resp_description[]" placeholder="Responsabilidade" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    `;
+    container.appendChild(div);
+}
+
+function addRiskRow() {
+    const container = document.getElementById('risks-container');
+    const div = document.createElement('div');
+    div.className = 'risk-row grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-gray-200 rounded-md';
+    div.innerHTML = `
+        <input type="text" name="risk_name[]" placeholder="Nome do risco" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="risk_description[]" placeholder="Descrição" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="risk_mitigation[]" placeholder="Mitigação" 
+               class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+    `;
+    container.appendChild(div);
+}
+</script>
+{% endblock %}

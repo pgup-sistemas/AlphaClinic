@@ -1,0 +1,182 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ audit.title }} - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Audit Header -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-clipboard-check text-2xl text-blue-600"></i>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900 truncate">
+                                {{ audit.title }}
+                            </h1>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if audit.audit_type.value == 'internal' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                    {% if audit.audit_type.value == 'internal' %}Interna{% else %}Externa{% endif %}
+                                </span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if audit.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif audit.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if audit.status == 'planned' %}Planejada
+                                    {% elif audit.status == 'in_progress' %}Em Andamento
+                                    {% elif audit.status == 'completed' %}Concluída
+                                    {% else %}{{ audit.status|title }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('audits.edit', id=audit.id) }}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-edit mr-1"></i> Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Progresso da Auditoria</span>
+                <span class="text-sm font-medium text-gray-900">{{ audit.progress_percentage }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: {{ audit.progress_percentage }}%"></div>
+            </div>
+        </div>
+
+        <!-- Audit Info -->
+        <div class="px-6 py-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% if audit.norm %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Norma Associada</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ audit.norm.name }} ({{ audit.norm.code }})</dd>
+                </div>
+                {% endif %}
+                {% if audit.planned_date %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Data Planejada</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ audit.planned_date.strftime('%d/%m/%Y') }}</dd>
+                </div>
+                {% endif %}
+                {% if audit.assigned_auditor %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Auditor</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ audit.assigned_auditor.full_name }}</dd>
+                </div>
+                {% endif %}
+                {% if audit.location %}
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Local</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ audit.location }}</dd>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Non-Conformities Summary -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Não Conformidades
+            </h3>
+            <a href="{{ url_for('audits.add_non_conformity', id=audit.id) }}" 
+               class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <i class="fas fa-plus mr-1"></i> Adicionar NC
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-gray-900">{{ nc_stats.total }}</div>
+                <div class="text-sm text-gray-600">Total</div>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-red-600">{{ nc_stats.critical }}</div>
+                <div class="text-sm text-red-600">Críticas</div>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-yellow-600">{{ nc_stats.major }}</div>
+                <div class="text-sm text-yellow-600">Maiores</div>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ nc_stats.minor }}</div>
+                <div class="text-sm text-blue-600">Menores</div>
+            </div>
+        </div>
+
+        {% if audit.non_conformities %}
+        <div class="space-y-3">
+            {% for nc in audit.non_conformities %}
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            {% if nc.severity == 'critical' %}bg-red-100 text-red-800
+                            {% elif nc.severity == 'major' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-blue-100 text-blue-800{% endif %}">
+                            {{ nc.severity|title }}
+                        </span>
+                        <span class="text-sm font-medium text-gray-900">{{ nc.title }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ nc.description[:100] }}{% if nc.description|length > 100 %}...{% endif %}</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    Status: <span class="font-medium">{{ nc.status|title }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">Nenhuma não conformidade registrada.</p>
+        {% endif %}
+    </div>
+
+    <!-- Audit Content -->
+    {% if audit.objectives or audit.scope or audit.findings or audit.conclusion %}
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Detalhes da Auditoria</h3>
+        
+        {% if audit.objectives %}
+        <div class="mb-4">
+            <h4 class="text-md font-medium text-gray-700 mb-2">Objetivos</h4>
+            <div class="prose max-w-none text-gray-600">{{ audit.objectives }}</div>
+        </div>
+        {% endif %}
+        
+        {% if audit.scope %}
+        <div class="mb-4">
+            <h4 class="text-md font-medium text-gray-700 mb-2">Escopo</h4>
+            <div class="prose max-w-none text-gray-600">{{ audit.scope }}</div>
+        </div>
+        {% endif %}
+        
+        {% if audit.findings %}
+        <div class="mb-4">
+            <h4 class="text-md font-medium text-gray-700 mb-2">Constatações</h4>
+            <div class="prose max-w-none text-gray-600">{{ audit.findings }}</div>
+        </div>
+        {% endif %}
+        
+        {% if audit.conclusion %}
+        <div>
+            <h4 class="text-md font-medium text-gray-700 mb-2">Conclusão</h4>
+            <div class="prose max-w-none text-gray-600">{{ audit.conclusion }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

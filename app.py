@@ -38,6 +38,9 @@ def create_app():
     from blueprints.norms import norms_bp
     from blueprints.audits import audits_bp
     from blueprints.teams import teams_bp
+    from blueprints.processes import processes_bp
+    from blueprints.nonconformities import nonconformities_bp
+    from blueprints.reports import reports_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
@@ -45,6 +48,9 @@ def create_app():
     app.register_blueprint(norms_bp, url_prefix='/norms')
     app.register_blueprint(audits_bp, url_prefix='/audits')
     app.register_blueprint(teams_bp, url_prefix='/teams')
+    app.register_blueprint(processes_bp, url_prefix='/processes')
+    app.register_blueprint(nonconformities_bp, url_prefix='/nonconformities')
+    app.register_blueprint(reports_bp, url_prefix='/reports')
     
     return app
 
