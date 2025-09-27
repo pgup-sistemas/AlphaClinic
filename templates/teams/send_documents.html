@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Enviar Documentos - {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Enviar Documentos para {{ team.name }}</h1>
+                    <p class="text-gray-600 mt-1">Selecione os documentos para enviar aos membros da equipe</p>
+                </div>
+                <a href="{{ url_for('teams.view', id=team.id) }}"
+                   class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de ação</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="action_type" value="read" checked
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                            <span class="ml-2 text-sm text-gray-700">Enviar para leitura</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="action_type" value="review"
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                            <span class="ml-2 text-sm text-gray-700">Enviar para revisão (apenas documentos em revisão)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="deadline" class="block text-sm font-medium text-gray-700">Prazo (opcional)</label>
+                    <input type="date" name="deadline" id="deadline"
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">Prazo para conclusão da revisão.</p>
+                </div>
+
+                <div>
+                    <label for="message" class="block text-sm font-medium text-gray-700">Mensagem (opcional)</label>
+                    <textarea name="message" id="message" rows="3" placeholder="Mensagem adicional para os membros..."
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Selecionar Documentos</label>
+                    <div class="space-y-2 max-h-96 overflow-y-auto border border-gray-300 rounded-md p-3">
+                        {% for document in documents %}
+                        <label class="flex items-start">
+                            <input type="checkbox" name="document_ids" value="{{ document.id }}"
+                                   class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <div class="ml-2 flex-1">
+                                <div class="flex items-center">
+                                    <span class="text-sm font-medium text-gray-900">{{ document.title }}</span>
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                           {% if document.status.value == 'published' %}bg-green-100 text-green-800
+                                           {% elif document.status.value == 'review' %}bg-yellow-100 text-yellow-800
+                                           {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ document.status.value }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-500">
+                                    Código: {{ document.code or 'N/A' }} •
+                                    Versão: {{ document.version }} •
+                                    Criado por: {{ document.creator.full_name }}
+                                </p>
+                                {% if document.description %}
+                                <p class="text-xs text-gray-600 mt-1">{{ document.description[:100] }}{% if document.description|length > 100 %}...{% endif %}</p>
+                                {% endif %}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if not documents %}
+                    <p class="text-gray-500 mt-2">Nenhum documento disponível para envio.</p>
+                    {% endif %}
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-blue-800">Resumo do envio</h3>
+                            <div class="mt-2 text-sm text-blue-700">
+                                <p>Equipe: <strong>{{ team.name }}</strong> ({{ team.members|length }} membros)</p>
+                                <p>Documentos selecionados: <span id="selected-count">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ url_for('teams.view', id=team.id) }}"
+                       class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Enviar Documentos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="document_ids"]');
+    const selectedCount = document.getElementById('selected-count');
+
+    function updateCount() {
+        const count = document.querySelectorAll('input[name="document_ids"]:checked').length;
+        selectedCount.textContent = count;
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCount);
+    });
+
+    updateCount(); // Initial count
+});
+</script>
+{% endblock %}

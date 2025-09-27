@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Notificações em Lote - {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Notificações em Lote</h1>
+                    <p class="text-gray-600 mt-1">Enviar notificações para todos os membros de {{ team.name }}</p>
+                </div>
+                <a href="{{ url_for('teams.view', id=team.id) }}"
+                   class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label for="notification_type" class="block text-sm font-medium text-gray-700">Tipo de notificação</label>
+                    <select name="notification_type" id="notification_type" required
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="general">Geral</option>
+                        <option value="urgent">Urgente</option>
+                        <option value="reminder">Lembrete</option>
+                        <option value="update">Atualização</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700">Assunto</label>
+                    <input type="text" name="subject" id="subject" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label for="message" class="block text-sm font-medium text-gray-700">Mensagem</label>
+                    <textarea name="message" id="message" rows="6" required
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" name="send_email" id="send_email" value="true"
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="send_email" class="ml-2 block text-sm text-gray-900">
+                        Enviar também por e-mail
+                    </label>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-blue-800">Resumo do envio</h3>
+                            <div class="mt-2 text-sm text-blue-700">
+                                <p>Equipe: <strong>{{ team.name }}</strong></p>
+                                <p>Destinatários: <strong>{{ team.members|length }} membros</strong></p>
+                                {% if team.members %}
+                                <details class="mt-2">
+                                    <summary class="cursor-pointer text-blue-600 hover:text-blue-800">Ver lista de membros</summary>
+                                    <ul class="mt-2 space-y-1">
+                                        {% for member in team.members %}
+                                        <li class="text-xs">• {{ member.full_name }} ({{ member.email }})</li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ url_for('teams.view', id=team.id) }}"
+                       class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Enviar Notificação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

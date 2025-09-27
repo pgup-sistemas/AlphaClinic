@@ -20,9 +20,12 @@ def index():
     if search:
         query = query.filter(Team.name.contains(search))
     
-    teams = query.order_by(Team.name).all()
-    
-    return render_template('teams/index.html', teams=teams)
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Items per page
+
+    teams_pagination = query.order_by(Team.name).paginate(page=page, per_page=per_page, error_out=False)
+
+    return render_template('teams/index.html', teams_pagination=teams_pagination)
 
 @teams_bp.route('/create', methods=['GET', 'POST'])
 @login_required

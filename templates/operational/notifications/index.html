@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Notificações - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Notificações</h1>
+                <p class="text-gray-600">Sistema de comunicação operacional</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('operational.dashboard') }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded">
+                    Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="GET" class="flex flex-wrap gap-4">
+            <div class="min-w-48">
+                <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos os tipos</option>
+                    <option value="info" {% if request.args.get('type') == 'info' %}selected{% endif %}>Informação</option>
+                    <option value="warning" {% if request.args.get('type') == 'warning' %}selected{% endif %}>Aviso</option>
+                    <option value="urgent" {% if request.args.get('type') == 'urgent' %}selected{% endif %}>Urgente</option>
+                    <option value="success" {% if request.args.get('type') == 'success' %}selected{% endif %}>Sucesso</option>
+                </select>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="unread" value="true" id="unread_only"
+                       {% if request.args.get('unread', 'false') == 'true' %}checked{% endif %}
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="unread_only" class="ml-2 text-sm text-gray-700">Apenas não lidas</label>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for notification in notifications.items %}
+            <li class="{% if not notification.is_read %}bg-blue-50{% endif %}">
+                <div class="px-4 py-4 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full flex items-center justify-center
+                                    {% if notification.type.value == 'urgent' %}bg-red-100
+                                    {% elif notification.type.value == 'warning' %}bg-orange-100
+                                    {% elif notification.type.value == 'success' %}bg-green-100
+                                    {% else %}bg-blue-100{% endif %}">
+                                    <i class="fas
+                                        {% if notification.type.value == 'urgent' %}fa-exclamation-triangle text-red-600
+                                        {% elif notification.type.value == 'warning' %}fa-exclamation-circle text-orange-600
+                                        {% elif notification.type.value == 'success' %}fa-check-circle text-green-600
+                                        {% else %}fa-info-circle text-blue-600{% endif %}"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <div class="flex items-center">
+                                    <h3 class="text-sm font-medium text-gray-900">{{ notification.title }}</h3>
+                                    {% if not notification.is_read %}
+                                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Não lida
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+                                <div class="flex items-center mt-2 text-xs text-gray-500">
+                                    <span>{{ notification.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>{{ notification.category|title }}</span>
+                                    {% if notification.priority == 'high' %}
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        Alta Prioridade
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            {% if not notification.is_read %}
+                            <form method="POST" action="{{ url_for('operational.notifications_mark_read', id=notification.id) }}" class="inline">
+                                <button type="submit" class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                    Marcar como lida
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% if not notifications.items %}
+        <div class="text-center py-12">
+            <i class="fas fa-bell text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma notificação encontrada</h3>
+            <p class="text-gray-500">Você será notificado quando houver novas atividades.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if notifications.has_prev or notifications.has_next %}
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if notifications.has_prev %}
+            <a href="{{ url_for('operational.notifications_index', page=notifications.prev_num) }}"
+               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Anterior
+            </a>
+            {% endif %}
+            {% if notifications.has_next %}
+            <a href="{{ url_for('operational.notifications_index', page=notifications.next_num) }}"
+               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Próximo
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Mostrando
+                    <span class="font-medium">{{ notifications.page }}</span>
+                    de
+                    <span class="font-medium">{{ notifications.pages }}</span>
+                    páginas
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    {% if notifications.has_prev %}
+                    <a href="{{ url_for('operational.notifications_index', page=notifications.prev_num) }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+
+                    {% for page_num in notifications.iter_pages() %}
+                        {% if page_num %}
+                            <a href="{{ url_for('operational.notifications_index', page=page_num) }}"
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium
+                               {% if page_num == notifications.page %}text-blue-600 bg-blue-50{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                                {{ page_num }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if notifications.has_next %}
+                    <a href="{{ url_for('operational.notifications_index', page=notifications.next_num) }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

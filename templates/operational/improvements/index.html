@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Ciclos de Melhoria - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Ciclos de Melhoria</h1>
+                <p class="text-gray-600">Plan-Do-Check-Act (PDCA)</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('operational.improvements_create') }}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <i class="fas fa-plus mr-2"></i>Novo Ciclo PDCA
+                </a>
+                <a href="{{ url_for('operational.dashboard') }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded">
+                    Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="GET" class="flex flex-wrap gap-4">
+            <div class="min-w-48">
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos os status</option>
+                    <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Ativo</option>
+                    <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Concluído</option>
+                </select>
+            </div>
+            <div class="min-w-48">
+                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todas as categorias</option>
+                    <option value="eficiência" {% if request.args.get('category') == 'eficiência' %}selected{% endif %}>Eficiência</option>
+                    <option value="qualidade" {% if request.args.get('category') == 'qualidade' %}selected{% endif %}>Qualidade</option>
+                    <option value="segurança" {% if request.args.get('category') == 'segurança' %}selected{% endif %}>Segurança</option>
+                    <option value="outros" {% if request.args.get('category') == 'outros' %}selected{% endif %}>Outros</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Improvements List -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for improvement in improvements %}
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">{{ improvement.title }}</h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if improvement.status == 'completed' %}bg-green-100 text-green-800
+                        {% else %}bg-blue-100 text-blue-800{% endif %}">
+                        {% if improvement.status == 'completed' %}Concluído{% else %}Ativo{% endif %}
+                    </span>
+                </div>
+
+                {% if improvement.description %}
+                <p class="text-sm text-gray-600 mb-4 line-clamp-3">{{ improvement.description }}</p>
+                {% endif %}
+
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Categoria:</span>
+                        <span class="text-gray-900 capitalize">{{ improvement.category }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Prioridade:</span>
+                        <span class="text-gray-900 capitalize">{{ improvement.priority }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Responsável:</span>
+                        <span class="text-gray-900">{{ improvement.responsible.full_name }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Fase Atual:</span>
+                        <span class="text-gray-900">{{ improvement.current_phase.value.upper() }}</span>
+                    </div>
+                </div>
+
+                <!-- PDCA Phase -->
+                <div class="mb-4">
+                    <div class="text-xs text-gray-500 mb-1">Fase Atual</div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {{ improvement.current_phase.value.upper() }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <a href="{{ url_for('operational.improvements_view', id=improvement.id) }}"
+                       class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                        Ver detalhes
+                    </a>
+                    {% if improvement.status != 'completed' %}
+                    <form method="POST" action="{{ url_for('operational.improvements_update_phase', id=improvement.id) }}"
+                          class="inline">
+                        <input type="hidden" name="phase" value="do">
+                        <button type="submit" class="text-green-600 hover:text-green-900 text-sm font-medium">
+                            Avançar →
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not improvements %}
+    <div class="bg-white shadow rounded-lg p-12 text-center">
+        <i class="fas fa-sync-alt text-4xl text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum ciclo de melhoria encontrado</h3>
+        <p class="text-gray-500 mb-4">Comece criando seu primeiro ciclo PDCA.</p>
+        <a href="{{ url_for('operational.improvements_create') }}"
+           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200">
+            <i class="fas fa-plus mr-2"></i>
+            Criar Primeiro Ciclo
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Usuários</h1>
+        <a href="{{ url_for('users.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Novo Usuário
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+        <form method="GET" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+                       placeholder="Buscar por nome, usuário ou email..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="min-w-48">
+                <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos os papéis</option>
+                    <option value="admin" {% if request.args.get('role') == 'admin' %}selected{% endif %}>Administrador</option>
+                    <option value="manager" {% if request.args.get('role') == 'manager' %}selected{% endif %}>Gerente</option>
+                    <option value="user" {% if request.args.get('role') == 'user' %}selected{% endif %}>Usuário</option>
+                    <option value="auditor" {% if request.args.get('role') == 'auditor' %}selected{% endif %}>Auditor</option>
+                    <option value="reviewer" {% if request.args.get('role') == 'reviewer' %}selected{% endif %}>Revisor</option>
+                </select>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" name="active" value="true" id="active_only"
+                       {% if request.args.get('active', 'true') == 'true' %}checked{% endif %}
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="active_only" class="ml-2 text-sm text-gray-700">Apenas ativos</label>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for user in users_pagination.items %}
+            <li>
+                <div class="px-4 py-4 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                    <span class="text-sm font-medium text-gray-700">{{ user.full_name[0].upper() }}</span>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="flex items-center">
+                                    <h3 class="text-sm font-medium text-gray-900">{{ user.full_name }}</h3>
+                                    {% if not user.is_active %}
+                                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Inativo
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm text-gray-500">@{{ user.username }} • {{ user.email }}</p>
+                                <p class="text-sm text-gray-500">
+                                    Papel: <span class="capitalize">{{ user.role.value }}</span>
+                                    {% if user.last_login %}
+                                    • Último login: {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <a href="{{ url_for('users.view', id=user.id) }}"
+                               class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                Ver
+                            </a>
+                            <a href="{{ url_for('users.edit', id=user.id) }}"
+                               class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                Editar
+                            </a>
+                            {% if current_user.role.value == 'admin' and user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('users.delete', id=user.id) }}"
+                                  onsubmit="return confirm('Tem certeza que deseja excluir este usuário?')"
+                                  class="inline">
+                                <button type="submit" class="text-red-600 hover:text-red-900 text-sm font-medium">
+                                    Excluir
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% if not users_pagination.items %}
+        <div class="text-center py-12">
+            <p class="text-gray-500">Nenhum usuário encontrado.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if users_pagination.pages > 1 %}
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if users_pagination.has_prev %}
+            <a href="{{ url_for('users.index', page=users_pagination.prev_num, search=request.args.get('search'), role=request.args.get('role'), active=request.args.get('active')) }}"
+               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Anterior
+            </a>
+            {% endif %}
+            {% if users_pagination.has_next %}
+            <a href="{{ url_for('users.index', page=users_pagination.next_num, search=request.args.get('search'), role=request.args.get('role'), active=request.args.get('active')) }}"
+               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Próximo
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Mostrando
+                    <span class="font-medium">{{ users_pagination.page * users_pagination.per_page - users_pagination.per_page + 1 }}</span>
+                    a
+                    <span class="font-medium">{{ min(users_pagination.page * users_pagination.per_page, users_pagination.total) }}</span>
+                    de
+                    <span class="font-medium">{{ users_pagination.total }}</span>
+                    resultados
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if users_pagination.has_prev %}
+                    <a href="{{ url_for('users.index', page=users_pagination.prev_num, search=request.args.get('search'), role=request.args.get('role'), active=request.args.get('active')) }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">Anterior</span>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    {% endif %}
+
+                    {% for page_num in users_pagination.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == users_pagination.page %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">{{ page_num }}</span>
+                            {% else %}
+                                <a href="{{ url_for('users.index', page=page_num, search=request.args.get('search'), role=request.args.get('role'), active=request.args.get('active')) }}"
+                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ page_num }}</a>
+                            {% endif %}
+                        {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if users_pagination.has_next %}
+                    <a href="{{ url_for('users.index', page=users_pagination.next_num, search=request.args.get('search'), role=request.args.get('role'), active=request.args.get('active')) }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">Próximo</span>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

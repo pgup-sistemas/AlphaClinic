@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Permissões - {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Gerenciar Permissões</h1>
+                    <p class="text-gray-600 mt-1">Equipe: {{ team.name }}</p>
+                </div>
+                <a href="{{ url_for('teams.view', id=team.id) }}"
+                   class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <form method="POST" class="space-y-6">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Funcionalidade em Desenvolvimento</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p>O sistema de permissões em grupo está sendo implementado. Por enquanto, as permissões são baseadas nos papéis individuais dos usuários.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Permissões Atuais da Equipe</h3>
+                    <div class="space-y-4">
+                        <div class="border border-gray-200 rounded-md p-4">
+                            <h4 class="font-medium text-gray-900">Membros da Equipe</h4>
+                            <p class="text-sm text-gray-600 mt-1">Usuários que fazem parte desta equipe:</p>
+                            {% if team.members %}
+                            <ul class="mt-2 space-y-1">
+                                {% for member in team.members %}
+                                <li class="flex items-center justify-between text-sm">
+                                    <span>{{ member.full_name }} (@{{ member.username }})</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                                        {{ member.role.value }}
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-sm text-gray-500 mt-2">Nenhum membro na equipe.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="border border-gray-200 rounded-md p-4">
+                            <h4 class="font-medium text-gray-900">Permissões por Papel</h4>
+                            <div class="mt-2 space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Administrador:</span>
+                                    <span class="text-green-600">Acesso total ao sistema</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Gerente:</span>
+                                    <span class="text-blue-600">Gerenciar usuários e equipes</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Usuário:</span>
+                                    <span class="text-gray-600">Acesso básico aos documentos</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Auditor:</span>
+                                    <span class="text-purple-600">Acesso aos módulos de auditoria</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Revisor:</span>
+                                    <span class="text-orange-600">Pode revisar documentos</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Configurações Futuras</h4>
+                    <p class="text-sm text-gray-600">Em breve será possível configurar permissões específicas por equipe, como:</p>
+                    <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                        <li>• Acesso a documentos específicos</li>
+                        <li>• Permissões de criação/edição</li>
+                        <li>• Notificações automáticas</li>
+                        <li>• Relatórios por equipe</li>
+                    </ul>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ url_for('teams.view', id=team.id) }}"
+                       class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Voltar
+                    </a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded opacity-50 cursor-not-allowed" disabled>
+                        Salvar Permissões
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -6,6 +6,7 @@
     <title>{% block title %}Alphaclin QMS{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -26,146 +27,193 @@
             }
         }
     </script>
+    <style>
+        .sidebar-link {
+            position: relative;
+        }
+
+        .sidebar-link:hover .sidebar-icon {
+            transform: scale(1.1);
+        }
+
+        .sidebar-icon {
+            transition: transform 0.2s ease-in-out;
+            width: 20px;
+            text-align: center;
+        }
+
+        #sidebar {
+            transition: width 0.3s ease-in-out;
+        }
+
+        #main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        #sidebar.w-16 ~ #main-content {
+            margin-left: 4rem; /* w-16 = 4rem */
+        }
+
+        #sidebar.w-64 ~ #main-content {
+            margin-left: 16rem; /* w-64 = 16rem */
+        }
+
+        /* Tooltip for collapsed sidebar */
+        .sidebar-link:hover::after {
+            content: attr(title);
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #374151;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-left: 0.5rem;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #sidebar.w-16 .sidebar-link:hover::after {
+            opacity: 1;
+        }
+
+        /* Hide tooltips on expanded sidebar */
+        #sidebar.w-64 .sidebar-link:hover::after {
+            display: none;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen flex flex-col">
     {% if current_user.is_authenticated %}
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <span class="text-2xl font-bold text-alphaclin-blue">
-                            <i class="fas fa-shield-alt mr-2"></i>
-                            Alphaclin QMS
-                        </span>
-                    </div>
-
-                    <!-- Navigation Menu -->
-                    <div class="hidden md:block">
-                        <div class="ml-10 flex items-baseline space-x-4">
-                            <a href="{{ url_for('main.dashboard') }}" 
-                               class="{% if request.endpoint == 'main.dashboard' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
-                            </a>
-                            <a href="{{ url_for('documents.index') }}" 
-                               class="{% if request.blueprint == 'documents' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-file-alt mr-1"></i>Documentos
-                            </a>
-                            <a href="{{ url_for('norms.index') }}" 
-                               class="{% if request.blueprint == 'norms' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-clipboard-list mr-1"></i>Normas
-                            </a>
-                            <a href="{{ url_for('processes.index') }}" 
-                               class="{% if request.blueprint == 'processes' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-sitemap mr-1"></i>Processos
-                            </a>
-                            <a href="{{ url_for('audits.index') }}" 
-                               class="{% if request.blueprint == 'audits' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-clipboard-check mr-1"></i>Auditorias
-                            </a>
-                            <a href="{{ url_for('teams.index') }}" 
-                               class="{% if request.blueprint == 'teams' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-users mr-1"></i>Equipes
-                            </a>
-                            <a href="{{ url_for('nonconformities.index') }}" 
-                               class="{% if request.blueprint == 'nonconformities' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-exclamation-triangle mr-1"></i>NCs
-                            </a>
-                            <a href="{{ url_for('reports.index') }}" 
-                               class="{% if request.blueprint == 'reports' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} px-3 py-2 rounded-md text-sm font-medium">
-                                <i class="fas fa-chart-bar mr-1"></i>Relatórios
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Menu -->
-                <div class="hidden md:block">
-                    <div class="ml-4 flex items-center md:ml-6">
-                        <div class="relative ml-3">
-                            <div class="flex items-center space-x-3">
-                                <span class="text-gray-700 text-sm">{{ current_user.full_name }}</span>
-                                <div class="flex items-center space-x-2">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        {% if current_user.role.value == 'admin' %}bg-red-100 text-red-800
-                                        {% elif current_user.role.value == 'manager' %}bg-purple-100 text-purple-800
-                                        {% elif current_user.role.value == 'auditor' %}bg-orange-100 text-orange-800
-                                        {% elif current_user.role.value == 'reviewer' %}bg-blue-100 text-blue-800
-                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                        {{ current_user.role.value|title }}
-                                    </span>
-                                    <a href="{{ url_for('auth.logout') }}" 
-                                       class="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Mobile menu button -->
-                <div class="md:hidden">
-                    <button type="button" id="mobile-menu-button" class="bg-white rounded-md p-2 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-alphaclin-blue">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed left-0 top-0 w-64 bg-white shadow-lg transform transition-all duration-300 ease-in-out z-50 -translate-x-full lg:translate-x-0 flex flex-col overflow-y-auto" style="height: calc(100vh - 80px);">
+        <div class="flex flex-col h-full">
+            <!-- Logo -->
+            <div class="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+                <span id="logo-text" class="text-xl font-bold text-alphaclin-blue">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    Alphaclin QMS
+                </span>
+                <button id="sidebar-toggle" class="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-alphaclin-blue lg:hidden">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-        </div>
 
-        <!-- Mobile menu -->
-        <div id="mobile-menu" class="md:hidden hidden">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <a href="{{ url_for('main.dashboard') }}" 
-                   class="{% if request.endpoint == 'main.dashboard' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            <!-- Navigation Menu -->
+            <nav class="px-2 py-4 space-y-1 overflow-y-auto">
+                <a href="{{ url_for('main.dashboard') }}" title="Dashboard"
+                    class="sidebar-link {% if request.endpoint == 'main.dashboard' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-tachometer-alt sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Dashboard</span>
                 </a>
-                <a href="{{ url_for('documents.index') }}" 
-                   class="{% if request.blueprint == 'documents' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-file-alt mr-2"></i>Documentos
+
+                <a href="{{ url_for('documents.index') }}" title="Documentos"
+                    class="sidebar-link {% if request.blueprint == 'documents' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-file-alt sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Documentos</span>
                 </a>
-                <a href="{{ url_for('norms.index') }}" 
-                   class="{% if request.blueprint == 'norms' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-clipboard-list mr-2"></i>Normas
+
+                <a href="{{ url_for('norms.index') }}" title="Normas"
+                    class="sidebar-link {% if request.blueprint == 'norms' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-clipboard-list sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Normas</span>
                 </a>
-                <a href="{{ url_for('processes.index') }}" 
-                   class="{% if request.blueprint == 'processes' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-sitemap mr-2"></i>Processos
+
+                <a href="{{ url_for('processes.index') }}" title="Processos"
+                    class="sidebar-link {% if request.blueprint == 'processes' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-sitemap sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Processos</span>
                 </a>
-                <a href="{{ url_for('audits.index') }}" 
-                   class="{% if request.blueprint == 'audits' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-clipboard-check mr-2"></i>Auditorias
+
+                <a href="{{ url_for('audits.index') }}" title="Auditorias"
+                    class="sidebar-link {% if request.blueprint == 'audits' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-clipboard-check sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Auditorias</span>
                 </a>
-                <a href="{{ url_for('teams.index') }}" 
-                   class="{% if request.blueprint == 'teams' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-users mr-2"></i>Equipes
+
+                <a href="{{ url_for('teams.index') }}" title="Equipes"
+                    class="sidebar-link {% if request.blueprint == 'teams' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-users sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Equipes</span>
                 </a>
-                <a href="{{ url_for('nonconformities.index') }}" 
-                   class="{% if request.blueprint == 'nonconformities' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>Não Conformidades
+
+                <a href="{{ url_for('operational.dashboard') }}" title="Painel Operacional"
+                    class="sidebar-link {% if request.blueprint == 'operational' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-cogs sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Operacional</span>
                 </a>
-                <a href="{{ url_for('reports.index') }}" 
-                   class="{% if request.blueprint == 'reports' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-500 hover:text-gray-700{% endif %} block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-chart-bar mr-2"></i>Relatórios
+
+                <a href="{{ url_for('nonconformities.index') }}" title="Não Conformidades"
+                    class="sidebar-link {% if request.blueprint == 'nonconformities' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-exclamation-triangle sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">NCs</span>
                 </a>
-                <div class="border-t border-gray-200 pt-4">
-                    <div class="px-3 py-2">
-                        <div class="text-base font-medium text-gray-800">{{ current_user.full_name }}</div>
-                        <div class="text-sm text-gray-500">{{ current_user.role.value|title }}</div>
-                    </div>
-                    <a href="{{ url_for('auth.logout') }}" 
-                       class="block px-3 py-2 rounded-md text-base font-medium text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Sair
+
+                <a href="{{ url_for('reports.index') }}" title="Relatórios"
+                    class="sidebar-link {% if request.blueprint == 'reports' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-chart-bar sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Relatórios</span>
+                </a>
+
+                {% if current_user.role.value in ['admin', 'manager'] %}
+                <div class="pt-4 border-t border-gray-200">
+                    <a href="{{ url_for('users.index') }}" title="Usuários"
+                        class="sidebar-link {% if request.blueprint == 'users' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                        <i class="fas fa-user-cog sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Usuários</span>
                     </a>
                 </div>
+                {% endif %}
+            </nav>
+
+            <!-- User Info & Collapse Button -->
+            <div class="border-t border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center min-w-0 flex-1">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-alphaclin-blue flex items-center justify-center">
+                                <span class="text-xs font-medium text-white">{{ current_user.full_name.split()[0][0] }}{% if current_user.full_name.split()|length > 1 %}{{ current_user.full_name.split()[1][0] }}{% endif %}</span>
+                            </div>
+                        </div>
+                        <div class="ml-3 min-w-0 flex-1 hidden lg:block">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ current_user.full_name }}</p>
+                            <p class="text-xs text-gray-500 capitalize">{{ current_user.role.value }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="collapse-toggle" class="hidden lg:block p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                            <i id="collapse-icon" class="fas fa-chevron-left"></i>
+                        </button>
+                        <a href="{{ url_for('auth.logout') }}" class="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-alphaclin-blue" title="Sair">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
-    {% endif %}
+    </div>
+
+    <!-- Mobile overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden hidden" aria-hidden="true"></div>
+
+    <!-- Top bar for mobile -->
+    <div class="lg:hidden bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+        <div class="flex items-center justify-between">
+            <button id="mobile-menu-button" class="p-2 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-alphaclin-blue">
+                <i class="fas fa-bars"></i>
+            </button>
+            <span class="text-lg font-semibold text-alphaclin-blue">Alphaclin QMS</span>
+            <div class="w-10"></div> <!-- Spacer -->
+        </div>
+    </div>
 
     <!-- Main Content -->
-    <main class="{% if current_user.is_authenticated %}max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8{% endif %}">
+    <main id="main-content" class="lg:ml-64 flex flex-col transition-all duration-300 ease-in-out overflow-auto pb-16">
+        <div class="flex-1 px-4 py-6 lg:px-8">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -181,29 +229,96 @@
 
         <!-- Page Content -->
         {% block content %}{% endblock %}
+        </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+    {% if current_user.is_authenticated %}
+    <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-3 z-40">
+        <div class="px-4 lg:px-8">
             <div class="text-center text-sm text-gray-500">
                 © 2024 Alphaclin QMS - Sistema de Gestão da Qualidade
             </div>
         </div>
     </footer>
+    {% endif %}
+    {% endif %}
 
     <!-- Scripts -->
     <script>
-        // Mobile menu toggle
         document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
             const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const collapseToggle = document.getElementById('collapse-toggle');
+            const collapseIcon = document.getElementById('collapse-icon');
+            const logoText = document.getElementById('logo-text');
+            const sidebarTexts = document.querySelectorAll('.sidebar-text');
 
-            if (mobileMenuButton && mobileMenu) {
+            let isCollapsed = false;
+
+            // Mobile menu toggle
+            if (mobileMenuButton && sidebar && sidebarOverlay) {
                 mobileMenuButton.addEventListener('click', function() {
-                    mobileMenu.classList.toggle('hidden');
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebarOverlay.classList.remove('hidden');
+                });
+
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                });
+
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
                 });
             }
+
+            // Desktop sidebar collapse toggle
+            if (collapseToggle && collapseIcon && logoText) {
+                collapseToggle.addEventListener('click', function() {
+                    isCollapsed = !isCollapsed;
+
+                    if (isCollapsed) {
+                        // Collapse sidebar
+                        sidebar.classList.remove('w-64');
+                        sidebar.classList.add('w-16');
+                        logoText.classList.add('hidden');
+                        sidebarTexts.forEach(text => text.classList.add('hidden'));
+                        collapseIcon.classList.remove('fa-chevron-left');
+                        collapseIcon.classList.add('fa-chevron-right');
+                    } else {
+                        // Expand sidebar
+                        sidebar.classList.remove('w-16');
+                        sidebar.classList.add('w-64');
+                        logoText.classList.remove('hidden');
+                        sidebarTexts.forEach(text => text.classList.remove('hidden'));
+                        collapseIcon.classList.remove('fa-chevron-right');
+                        collapseIcon.classList.add('fa-chevron-left');
+                    }
+                });
+            }
+
+            // Close mobile sidebar on link click
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 1024) { // lg breakpoint
+                        sidebar.classList.add('-translate-x-full');
+                        sidebarOverlay.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 1024) { // lg breakpoint
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                }
+            });
         });
     </script>
 

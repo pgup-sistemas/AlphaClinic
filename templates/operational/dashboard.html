@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Operacional - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Painel Operacional</h1>
+                <p class="text-gray-600">Gestão CIPA, ciclos de melhoria e eventos operacionais</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Próxima Reunião CIPA -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-2xl text-blue-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Próxima CIPA</dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {% if data.upcoming_cipa %}
+                                    {{ data.upcoming_cipa.meeting_date.strftime('%d/%m') }}
+                                {% else %}
+                                    Nenhuma
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ciclos de Melhoria Ativos -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-sync-alt text-2xl text-green-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Melhorias Ativas</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ data.active_improvements }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Melhorias Concluídas -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-2xl text-purple-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Melhorias Concluídas</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ data.completed_improvements }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notificações Não Lidas -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-bell text-2xl text-orange-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Notificações</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ data.unread_notifications }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Kanban Preview -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Quadro Kanban</h3>
+                <a href="{{ url_for('operational.kanban_board') }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                    Ver completo →
+                </a>
+            </div>
+
+            <div class="grid grid-cols-4 gap-3">
+                <div class="text-center">
+                    <div class="bg-gray-100 rounded-lg p-3">
+                        <div class="text-2xl font-bold text-gray-600">{{ data.kanban_stats.todo }}</div>
+                        <div class="text-xs text-gray-500">A Fazer</div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="bg-blue-100 rounded-lg p-3">
+                        <div class="text-2xl font-bold text-blue-600">{{ data.kanban_stats.in_progress }}</div>
+                        <div class="text-xs text-gray-500">Em Andamento</div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="bg-yellow-100 rounded-lg p-3">
+                        <div class="text-2xl font-bold text-yellow-600">{{ data.kanban_stats.review }}</div>
+                        <div class="text-xs text-gray-500">Revisão</div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="bg-green-100 rounded-lg p-3">
+                        <div class="text-2xl font-bold text-green-600">{{ data.kanban_stats.done }}</div>
+                        <div class="text-xs text-gray-500">Concluído</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ url_for('operational.kanban_create') }}"
+                   class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center block">
+                    Novo Evento
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Ações Rápidas</h3>
+
+            <div class="space-y-3">
+                <a href="{{ url_for('operational.cipa_create') }}"
+                   class="flex items-center p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                    <i class="fas fa-users text-blue-600 mr-3"></i>
+                    <div>
+                        <div class="font-medium text-blue-900">Agendar Reunião CIPA</div>
+                        <div class="text-sm text-blue-700">Comissão Interna de Prevenção de Acidentes</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('operational.improvements_create') }}"
+                   class="flex items-center p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
+                    <i class="fas fa-sync-alt text-green-600 mr-3"></i>
+                    <div>
+                        <div class="font-medium text-green-900">Iniciar Ciclo PDCA</div>
+                        <div class="text-sm text-green-700">Ciclo de melhoria contínua</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('operational.notifications_index') }}"
+                   class="flex items-center p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+                    <i class="fas fa-bell text-orange-600 mr-3"></i>
+                    <div>
+                        <div class="font-medium text-orange-900">Ver Notificações</div>
+                        <div class="text-sm text-orange-700">{{ data.unread_notifications }} não lidas</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Atividades Recentes</h3>
+
+        <div class="space-y-4">
+            <!-- Próxima reunião CIPA -->
+            {% if data.upcoming_cipa %}
+            <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                <div class="flex-1">
+                    <div class="font-medium text-blue-900">Próxima Reunião CIPA</div>
+                    <div class="text-sm text-blue-700">
+                        {{ data.upcoming_cipa.title }} - {{ data.upcoming_cipa.meeting_date.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                </div>
+                <a href="{{ url_for('operational.cipa_view', id=data.upcoming_cipa.id) }}"
+                   class="text-blue-600 hover:text-blue-800 text-sm">Ver detalhes</a>
+            </div>
+            {% endif %}
+
+            <!-- Recent operational events -->
+            {% for event in data.recent_events %}
+            <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                <i class="fas fa-tasks text-gray-600 mr-3"></i>
+                <div class="flex-1">
+                    <div class="font-medium text-gray-900">{{ event.title }}</div>
+                    <div class="text-sm text-gray-600">
+                        {{ event.category|title }} • Criado {{ event.created_at.strftime('%d/%m/%Y') }}
+                        {% if event.due_date %}
+                        • Vence {{ event.due_date.strftime('%d/%m/%Y') }}
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    {% if event.status == 'todo' %}bg-gray-100 text-gray-800
+                    {% elif event.status == 'in_progress' %}bg-blue-100 text-blue-800
+                    {% elif event.status == 'review' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-green-100 text-green-800{% endif %}">
+                    {% if event.status == 'todo' %}A Fazer
+                    {% elif event.status == 'in_progress' %}Em Andamento
+                    {% elif event.status == 'review' %}Revisão
+                    {% else %}Concluído{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+
+            <!-- Recent notifications -->
+            {% for notification in data.recent_notifications %}
+            <div class="flex items-center p-4 bg-orange-50 rounded-lg">
+                <i class="fas fa-bell text-orange-600 mr-3"></i>
+                <div class="flex-1">
+                    <div class="font-medium text-orange-900">{{ notification.title }}</div>
+                    <div class="text-sm text-orange-700">{{ notification.message[:100] }}{% if notification.message|length > 100 %}...{% endif %}</div>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    {% if notification.type.value == 'urgent' %}bg-red-100 text-red-800
+                    {% elif notification.type.value == 'warning' %}bg-orange-100 text-orange-800
+                    {% elif notification.type.value == 'success' %}bg-green-100 text-green-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ notification.type.value|title }}
+                </span>
+            </div>
+            {% endfor %}
+
+            <!-- Recent improvements -->
+            {% for improvement in data.recent_improvements %}
+            <div class="flex items-center p-4 bg-green-50 rounded-lg">
+                <i class="fas fa-sync-alt text-green-600 mr-3"></i>
+                <div class="flex-1">
+                    <div class="font-medium text-green-900">{{ improvement.title }}</div>
+                    <div class="text-sm text-green-700">
+                        Fase: {{ improvement.current_phase.value|upper }} • {{ improvement.category|title }}
+                    </div>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    {% if improvement.status == 'completed' %}bg-green-100 text-green-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ improvement.status|title }}
+                </span>
+            </div>
+            {% endfor %}
+
+            {% if not data.upcoming_cipa and not data.recent_events and not data.recent_notifications and not data.recent_improvements %}
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-chart-line text-4xl mb-2"></i>
+                <p>Mais atividades serão exibidas conforme o sistema for utilizado.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

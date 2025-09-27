@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Reuniões CIPA - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Reuniões CIPA</h1>
+                <p class="text-gray-600">Comissão Interna de Prevenção de Acidentes</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('operational.cipa_create') }}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <i class="fas fa-plus mr-2"></i>Nova Reunião
+                </a>
+                <a href="{{ url_for('operational.dashboard') }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded">
+                    Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="GET" class="flex flex-wrap gap-4">
+            <div class="min-w-48">
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Todos os status</option>
+                    <option value="scheduled" {% if request.args.get('status') == 'scheduled' %}selected{% endif %}>Agendada</option>
+                    <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>Em Andamento</option>
+                    <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Concluída</option>
+                    <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelada</option>
+                </select>
+            </div>
+            <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Meetings List -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            {% for meeting in cipa_meetings.items %}
+            <li>
+                <div class="px-4 py-4 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <i class="fas fa-users text-blue-600"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="flex items-center">
+                                    <h3 class="text-sm font-medium text-gray-900">{{ meeting.title }}</h3>
+                                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if meeting.status == 'scheduled' %}bg-blue-100 text-blue-800
+                                        {% elif meeting.status == 'in_progress' %}bg-yellow-100 text-yellow-800
+                                        {% elif meeting.status == 'completed' %}bg-green-100 text-green-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {% if meeting.status == 'scheduled' %}Agendada
+                                        {% elif meeting.status == 'in_progress' %}Em Andamento
+                                        {% elif meeting.status == 'completed' %}Concluída
+                                        {% else %}Cancelada{% endif %}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-500">
+                                    {{ meeting.meeting_date.strftime('%d/%m/%Y %H:%M') }} • {{ meeting.location or 'Local não definido' }}
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    Presidente: {{ meeting.chairperson.full_name }} • Secretário: {{ meeting.secretary.full_name }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <a href="{{ url_for('operational.cipa_view', id=meeting.id) }}"
+                               class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                Ver
+                            </a>
+                            <a href="{{ url_for('operational.cipa_edit', id=meeting.id) }}"
+                               class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                Editar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+        {% if not cipa_meetings.items %}
+        <div class="text-center py-12">
+            <i class="fas fa-users text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500">Nenhuma reunião CIPA encontrada.</p>
+            <a href="{{ url_for('operational.cipa_create') }}"
+               class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200">
+                Criar primeira reunião
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if cipa_meetings.has_prev or cipa_meetings.has_next %}
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if cipa_meetings.has_prev %}
+            <a href="{{ url_for('operational.cipa_index', page=cipa_meetings.prev_num) }}"
+               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Anterior
+            </a>
+            {% endif %}
+            {% if cipa_meetings.has_next %}
+            <a href="{{ url_for('operational.cipa_index', page=cipa_meetings.next_num) }}"
+               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Próximo
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Mostrando
+                    <span class="font-medium">{{ cipa_meetings.page }}</span>
+                    de
+                    <span class="font-medium">{{ cipa_meetings.pages }}</span>
+                    páginas
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    {% if cipa_meetings.has_prev %}
+                    <a href="{{ url_for('operational.cipa_index', page=cipa_meetings.prev_num) }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+
+                    {% for page_num in cipa_meetings.iter_pages() %}
+                        {% if page_num %}
+                            <a href="{{ url_for('operational.cipa_index', page=page_num) }}"
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium
+                               {% if page_num == cipa_meetings.page %}text-blue-600 bg-blue-50{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                                {{ page_num }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if cipa_meetings.has_next %}
+                    <a href="{{ url_for('operational.cipa_index', page=cipa_meetings.next_num) }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

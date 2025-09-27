@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Equipe{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Editar Equipe: {{ team.name }}</h1>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Nome da equipe</label>
+                    <input type="text" name="name" id="name" value="{{ team.name }}" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700">Descrição</label>
+                    <textarea name="description" id="description" rows="3"
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{{ team.description or '' }}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Membros</label>
+                    <div class="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-md p-3">
+                        {% for user in users %}
+                        <label class="flex items-center">
+                            <input type="checkbox" name="member_ids" value="{{ user.id }}"
+                                   {% if user in team.members %}checked{% endif %}
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">
+                                {{ user.full_name }} (@{{ user.username }})
+                                {% if not user.is_active %}
+                                <span class="text-red-600">(Inativo)</span>
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Selecione os membros da equipe.</p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ url_for('teams.view', id=team.id) }}"
+                       class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

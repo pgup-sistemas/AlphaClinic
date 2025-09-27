@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Quadro Kanban - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Quadro Kanban</h1>
+                <p class="text-gray-600">Gestão visual de eventos operacionais</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('operational.kanban_create') }}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <i class="fas fa-plus mr-2"></i>Novo Evento
+                </a>
+                <a href="{{ url_for('operational.dashboard') }}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded">
+                    Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="kanban-board">
+        <!-- To Do Column -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 bg-gray-100 border-b border-gray-200 rounded-t-lg">
+                <h3 class="font-semibold text-gray-800 flex items-center">
+                    <i class="fas fa-circle text-gray-400 mr-2"></i>
+                    A Fazer
+                    <span class="ml-auto bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
+                        {{ kanban_data.todo|length }}
+                    </span>
+                </h3>
+            </div>
+            <div class="p-4 min-h-96 kanban-column" data-status="todo">
+                {% for event in kanban_data.todo %}
+                <div class="kanban-card bg-white border border-gray-200 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-move"
+                     data-id="{{ event.id }}">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-medium text-gray-900 text-sm">{{ event.title }}</h4>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if event.priority == 'critical' %}bg-red-100 text-red-800
+                            {% elif event.priority == 'high' %}bg-orange-100 text-orange-800
+                            {% elif event.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ event.priority }}
+                        </span>
+                    </div>
+
+                    {% if event.description %}
+                    <p class="text-xs text-gray-600 mb-2 line-clamp-2">{{ event.description }}</p>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ event.category or 'Geral' }}</span>
+                        {% if event.due_date %}
+                        <span class="{% if event.due_date < datetime.now() %}text-red-600{% else %}text-gray-500{% endif %}">
+                            <i class="fas fa-calendar-alt mr-1"></i>{{ event.due_date.strftime('%d/%m') }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if event.assigned_to %}
+                    <div class="mt-2 flex items-center text-xs text-gray-600">
+                        <i class="fas fa-user mr-1"></i>
+                        {{ event.assigned_to.full_name }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 bg-blue-100 border-b border-blue-200 rounded-t-lg">
+                <h3 class="font-semibold text-blue-800 flex items-center">
+                    <i class="fas fa-circle text-blue-500 mr-2"></i>
+                    Em Andamento
+                    <span class="ml-auto bg-blue-200 text-blue-700 text-xs px-2 py-1 rounded-full">
+                        {{ kanban_data.in_progress|length }}
+                    </span>
+                </h3>
+            </div>
+            <div class="p-4 min-h-96 kanban-column" data-status="in_progress">
+                {% for event in kanban_data.in_progress %}
+                <div class="kanban-card bg-white border border-gray-200 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-move"
+                     data-id="{{ event.id }}">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-medium text-gray-900 text-sm">{{ event.title }}</h4>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if event.priority == 'critical' %}bg-red-100 text-red-800
+                            {% elif event.priority == 'high' %}bg-orange-100 text-orange-800
+                            {% elif event.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ event.priority }}
+                        </span>
+                    </div>
+
+                    {% if event.description %}
+                    <p class="text-xs text-gray-600 mb-2 line-clamp-2">{{ event.description }}</p>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ event.category or 'Geral' }}</span>
+                        {% if event.due_date %}
+                        <span class="{% if event.due_date < datetime.now() %}text-red-600{% else %}text-gray-500{% endif %}">
+                            <i class="fas fa-calendar-alt mr-1"></i>{{ event.due_date.strftime('%d/%m') }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if event.assigned_to %}
+                    <div class="mt-2 flex items-center text-xs text-gray-600">
+                        <i class="fas fa-user mr-1"></i>
+                        {{ event.assigned_to.full_name }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Review Column -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 bg-yellow-100 border-b border-yellow-200 rounded-t-lg">
+                <h3 class="font-semibold text-yellow-800 flex items-center">
+                    <i class="fas fa-circle text-yellow-500 mr-2"></i>
+                    Revisão
+                    <span class="ml-auto bg-yellow-200 text-yellow-700 text-xs px-2 py-1 rounded-full">
+                        {{ kanban_data.review|length }}
+                    </span>
+                </h3>
+            </div>
+            <div class="p-4 min-h-96 kanban-column" data-status="review">
+                {% for event in kanban_data.review %}
+                <div class="kanban-card bg-white border border-gray-200 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-move"
+                     data-id="{{ event.id }}">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-medium text-gray-900 text-sm">{{ event.title }}</h4>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if event.priority == 'critical' %}bg-red-100 text-red-800
+                            {% elif event.priority == 'high' %}bg-orange-100 text-orange-800
+                            {% elif event.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ event.priority }}
+                        </span>
+                    </div>
+
+                    {% if event.description %}
+                    <p class="text-xs text-gray-600 mb-2 line-clamp-2">{{ event.description }}</p>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ event.category or 'Geral' }}</span>
+                        {% if event.due_date %}
+                        <span class="{% if event.due_date.date() < datetime.utcnow().date() %}text-red-600{% else %}text-gray-500{% endif %}">
+                            <i class="fas fa-calendar-alt mr-1"></i>{{ event.due_date.strftime('%d/%m') }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if event.assigned_to %}
+                    <div class="mt-2 flex items-center text-xs text-gray-600">
+                        <i class="fas fa-user mr-1"></i>
+                        {{ event.assigned_to.full_name }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Done Column -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 bg-green-100 border-b border-green-200 rounded-t-lg">
+                <h3 class="font-semibold text-green-800 flex items-center">
+                    <i class="fas fa-circle text-green-500 mr-2"></i>
+                    Concluído
+                    <span class="ml-auto bg-green-200 text-green-700 text-xs px-2 py-1 rounded-full">
+                        {{ kanban_data.done|length }}
+                    </span>
+                </h3>
+            </div>
+            <div class="p-4 min-h-96 kanban-column" data-status="done">
+                {% for event in kanban_data.done %}
+                <div class="kanban-card bg-white border border-gray-200 rounded-lg p-3 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-move"
+                     data-id="{{ event.id }}">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-medium text-gray-900 text-sm">{{ event.title }}</h4>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {% if event.priority == 'critical' %}bg-red-100 text-red-800
+                            {% elif event.priority == 'high' %}bg-orange-100 text-orange-800
+                            {% elif event.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ event.priority }}
+                        </span>
+                    </div>
+
+                    {% if event.description %}
+                    <p class="text-xs text-gray-600 mb-2 line-clamp-2">{{ event.description }}</p>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ event.category or 'Geral' }}</span>
+                        {% if event.due_date %}
+                        <span class="{% if event.due_date < datetime.now() %}text-red-600{% else %}text-gray-500{% endif %}">
+                            <i class="fas fa-calendar-alt mr-1"></i>{{ event.due_date.strftime('%d/%m') }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if event.assigned_to %}
+                    <div class="mt-2 flex items-center text-xs text-gray-600">
+                        <i class="fas fa-user mr-1"></i>
+                        {{ event.assigned_to.full_name }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Drag and drop functionality for Kanban
+document.addEventListener('DOMContentLoaded', function() {
+    let draggedElement = null;
+
+    // Initialize counters on page load
+    updateCounters();
+
+    // Make cards draggable
+    document.querySelectorAll('.kanban-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+
+        card.addEventListener('dragstart', function(e) {
+            draggedElement = this;
+            this.classList.add('opacity-50');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.id); // Store just the ID
+        });
+
+        card.addEventListener('dragend', function(e) {
+            this.classList.remove('opacity-50');
+            draggedElement = null;
+        });
+    });
+
+    // Make columns droppable
+    document.querySelectorAll('.kanban-column').forEach(column => {
+        column.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('bg-gray-50');
+        });
+
+        column.addEventListener('dragleave', function(e) {
+            this.classList.remove('bg-gray-50');
+        });
+
+        column.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('bg-gray-50');
+
+            if (draggedElement && draggedElement !== this) {
+                const newStatus = this.dataset.status;
+                const eventId = draggedElement.dataset.id;
+
+                // Update status via AJAX
+                fetch(`/operational/kanban/${eventId}/update-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',  // Include cookies for session
+                    body: `status=${newStatus}`
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success) {
+                        // Move card to new column - find the card by ID to ensure it's valid
+                        const cardToMove = document.querySelector(`.kanban-card[data-id="${eventId}"]`);
+                        if (cardToMove) {
+                            this.appendChild(cardToMove);
+                            // Update counters
+                            updateCounters();
+                            // Show success feedback
+                            showNotification('Evento movido com sucesso!', 'success');
+                        } else {
+                            console.error('Card not found for ID:', eventId);
+                            showNotification('Erro: Card não encontrado', 'error');
+                        }
+                    } else {
+                        showNotification('Erro ao mover evento: ' + (data.error || 'Resposta inválida'), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating status:', error);
+                    showNotification('Erro de conexão: ' + error.message, 'error');
+                });
+            }
+        });
+    });
+
+    function updateCounters() {
+        // Update column counters
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            const status = column.dataset.status;
+            const count = column.querySelectorAll('.kanban-card').length;
+            // Find the counter span in the column header
+            const columnContainer = column.closest('.bg-white');
+            const counter = columnContainer.querySelector('h3 span');
+            if (counter) {
+                counter.textContent = count;
+            }
+        });
+    }
+
+    function showNotification(message, type) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-4 py-2 rounded-md text-white z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Add visual feedback for drag operations
+    document.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('kanban-card')) {
+            e.target.style.transform = 'rotate(5deg)';
+        }
+    });
+
+    document.addEventListener('dragend', function(e) {
+        if (e.target.classList.contains('kanban-card')) {
+            e.target.style.transform = 'rotate(0deg)';
+        }
+    });
+});
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.kanban-card {
+    user-select: none;
+}
+
+.kanban-card[draggable="true"] {
+    cursor: grab;
+}
+
+.kanban-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+</style>
+{% endblock %}

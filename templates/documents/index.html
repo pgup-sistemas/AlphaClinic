@@ -59,7 +59,7 @@
 
     <!-- Lista de Documentos -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
-        {% if documents %}
+        {% if documents_pagination.items %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -85,7 +85,7 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for document in documents %}
+                    {% for document in documents_pagination.items %}
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4">
                             <div class="flex items-start space-x-3">
@@ -174,11 +174,80 @@
                 Comece criando seu primeiro documento.
                 {% endif %}
             </p>
-            <a href="{{ url_for('documents.create') }}" 
+            <a href="{{ url_for('documents.create') }}"
                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                 <i class="fas fa-plus mr-2"></i>
                 Criar Documento
             </a>
+        </div>
+        {% endif %}
+
+        <!-- Pagination -->
+        {% if documents_pagination.pages > 1 %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if documents_pagination.has_prev %}
+                <a href="{{ url_for('documents.index', page=documents_pagination.prev_num, search=request.args.get('search'), status=request.args.get('status'), folder=request.args.get('folder')) }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Anterior
+                </a>
+                {% endif %}
+                {% if documents_pagination.has_next %}
+                <a href="{{ url_for('documents.index', page=documents_pagination.next_num, search=request.args.get('search'), status=request.args.get('status'), folder=request.args.get('folder')) }}"
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Próximo
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Mostrando
+                        <span class="font-medium">{{ documents_pagination.page * documents_pagination.per_page - documents_pagination.per_page + 1 }}</span>
+                        a
+                        <span class="font-medium">{{ min(documents_pagination.page * documents_pagination.per_page, documents_pagination.total) }}</span>
+                        de
+                        <span class="font-medium">{{ documents_pagination.total }}</span>
+                        resultados
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if documents_pagination.has_prev %}
+                        <a href="{{ url_for('documents.index', page=documents_pagination.prev_num, search=request.args.get('search'), status=request.args.get('status'), folder=request.args.get('folder')) }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Anterior</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+
+                        {% for page_num in documents_pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num == documents_pagination.page %}
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">{{ page_num }}</span>
+                                {% else %}
+                                    <a href="{{ url_for('documents.index', page=page_num, search=request.args.get('search'), status=request.args.get('status'), folder=request.args.get('folder')) }}"
+                                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">{{ page_num }}</a>
+                                {% endif %}
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if documents_pagination.has_next %}
+                        <a href="{{ url_for('documents.index', page=documents_pagination.next_num, search=request.args.get('search'), status=request.args.get('status'), folder=request.args.get('folder')) }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Próximo</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
         </div>
         {% endif %}
     </div>

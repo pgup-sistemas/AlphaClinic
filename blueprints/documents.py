@@ -26,10 +26,13 @@ def index():
     if search:
         query = query.filter(Document.title.contains(search))
     
-    documents = query.order_by(Document.created_at.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 12  # Items per page for documents
+
+    documents_pagination = query.order_by(Document.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
     folders = DocumentFolder.query.all()
-    
-    return render_template('documents/index.html', documents=documents, folders=folders)
+
+    return render_template('documents/index.html', documents_pagination=documents_pagination, folders=folders)
 
 @documents_bp.route('/create', methods=['GET', 'POST'])
 @login_required
@@ -41,8 +44,9 @@ def create():
         code = request.form.get('code')
         category = request.form.get('category')
         folder_id = request.form.get('folder_id')
+        status = request.form.get('status', 'draft')
         norm_ids = request.form.getlist('norm_ids')
-        
+
         document = Document(
             title=title,
             content=content,
@@ -50,7 +54,7 @@ def create():
             category=category,
             folder_id=folder_id if folder_id else None,
             created_by_id=current_user.id,
-            status=DocumentStatus.DRAFT
+            status=DocumentStatus(status)
         )
         
         db.session.add(document)
@@ -225,6 +229,41 @@ def upload_attachment(id):
     if 'file' not in request.files:
         flash('Nenhum arquivo selecionado.', 'error')
         return redirect(url_for('documents.edit', id=id))
+    
+    @documents_bp.route('/upload-image', methods=['POST'])
+    @login_required
+    def upload_image():
+        """Upload de imagens para o editor TinyMCE"""
+        if 'file' not in request.files:
+            return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'Arquivo sem nome'}), 400
+    
+        if file and allowed_file(file.filename, current_app.config['ALLOWED_EXTENSIONS']):
+            filename = secure_filename(file.filename)
+            # Create unique filename
+            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            unique_filename = f"{timestamp}_{filename}"
+    
+            # Save file
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            image_path = os.path.join(upload_folder, 'images')
+            os.makedirs(image_path, exist_ok=True)
+            full_file_path = os.path.join(image_path, unique_filename)
+            file.save(full_file_path)
+    
+            # Return URL for TinyMCE
+            image_url = f"/static/uploads/images/{unique_filename}"
+            return jsonify({'location': image_url})
+    
+        return jsonify({'error': 'Tipo de arquivo não permitido'}), 400
+    
+    def allowed_file(filename, allowed_extensions):
+        """Check if file extension is allowed"""
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in allowed_extensions
     
     file = request.files['file']
     if file.filename == '':
