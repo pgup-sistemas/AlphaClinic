@@ -96,7 +96,7 @@
         <h3 class="text-lg font-medium text-gray-900 mb-4">
             <i class="fas fa-route mr-2"></i>Ações do Workflow
         </h3>
-        
+
         <div class="flex flex-wrap gap-3">
             {% if document.status.value == 'draft' %}
                 <form method="POST" action="{{ url_for('documents.workflow_action', id=document.id, action='submit_for_review') }}" class="inline">
@@ -119,6 +119,95 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Electronic Signatures -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">
+                <i class="fas fa-signature mr-2"></i>Assinaturas Eletrônicas
+            </h3>
+            <a href="{{ url_for('documents.document_signatures', id=document.id) }}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <i class="fas fa-list mr-1"></i> Ver Todas
+            </a>
+        </div>
+
+        <!-- Signature Actions -->
+        <div class="flex flex-wrap gap-3 mb-4">
+            {% if document.status.value == 'review' and current_user.id == document.reviewed_by_id %}
+            <a href="{{ url_for('documents.sign_document', id=document.id, signature_type='review') }}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <i class="fas fa-signature mr-1"></i> Assinar Revisão
+            </a>
+            {% endif %}
+
+            {% if document.status.value == 'review' and current_user.role.value in ['admin', 'manager'] %}
+            <a href="{{ url_for('documents.sign_document', id=document.id, signature_type='approval') }}"
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <i class="fas fa-check-circle mr-1"></i> Assinar Aprovação
+            </a>
+            {% endif %}
+
+            {% if document.status.value == 'published' %}
+            <a href="{{ url_for('documents.sign_document', id=document.id, signature_type='reading') }}"
+               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                <i class="fas fa-book-reader mr-1"></i> Confirmar Leitura
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Recent Signatures -->
+        {% if document.signatures %}
+        <div class="space-y-3">
+            <h4 class="text-sm font-medium text-gray-700 uppercase tracking-wide">Assinaturas Recentes</h4>
+            {% for signature in document.signatures[:3] %}
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0 h-8 w-8">
+                        <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span class="text-xs font-medium text-gray-700">
+                                {{ signature.user.full_name.split()[0][0] }}{% if signature.user.full_name.split()|length > 1 %}{{ signature.user.full_name.split()[1][0] }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ signature.user.full_name }}</p>
+                        <p class="text-xs text-gray-500">
+                            {{ signature.signature_type.value|title }} • {{ signature.signed_at.strftime('%d/%m/%Y %H:%M') }}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    {% if signature.is_valid %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-shield-alt mr-1"></i>Válida
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Problema
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if document.signatures|length > 3 %}
+            <div class="text-center">
+                <a href="{{ url_for('documents.document_signatures', id=document.id) }}"
+                   class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Ver todas as {{ document.signatures|length }} assinaturas →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-signature text-gray-400 text-4xl mb-4"></i>
+            <p class="text-gray-600">Nenhuma assinatura registrada ainda.</p>
+            <p class="text-sm text-gray-500 mt-1">As assinaturas aparecerão aqui após serem realizadas.</p>
+        </div>
+        {% endif %}
+    </div>
 
     <!-- Document Content -->
     <div class="bg-white shadow rounded-lg">

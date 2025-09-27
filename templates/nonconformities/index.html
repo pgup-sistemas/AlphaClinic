@@ -90,7 +90,7 @@
                             <span><i class="fas fa-user mr-1"></i>{{ nc.assigned_to.full_name }}</span>
                             {% endif %}
                             {% if nc.target_resolution_date %}
-                            <span class="{% if nc.target_resolution_date < (moment().date() if moment else now().date()) and nc.status in ['open', 'in_progress'] %}text-red-600{% endif %}">
+                            <span class="{% if nc.target_resolution_date < now().date() and nc.status in ['open', 'in_progress'] %}text-red-600{% endif %}">
                                 <i class="fas fa-clock mr-1"></i>Meta: {{ nc.target_resolution_date.strftime('%d/%m/%Y') }}
                             </span>
                             {% endif %}

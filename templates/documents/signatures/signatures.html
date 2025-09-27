@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Assinaturas - {{ document.title }} - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Assinaturas Eletrônicas</h1>
+            <p class="mt-2 text-gray-600">{{ document.title }} - Versão {{ document.version }}</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ url_for('documents.verify_signatures', id=document.id) }}"
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-shield-alt mr-2"></i>Verificar Assinaturas
+            </a>
+            <a href="{{ url_for('documents.view', id=document.id) }}"
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar ao Documento
+            </a>
+        </div>
+    </div>
+
+    <!-- Document Info -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <span class="font-medium text-blue-800">Título:</span>
+                <p class="text-blue-700">{{ document.title }}</p>
+            </div>
+            <div>
+                <span class="font-medium text-blue-800">Versão:</span>
+                <p class="text-blue-700">{{ document.version }}</p>
+            </div>
+            <div>
+                <span class="font-medium text-blue-800">Status:</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    {% if document.status.value == 'published' %}bg-green-100 text-green-800
+                    {% elif document.status.value == 'review' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ document.status.value|title }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signatures List -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">
+                <i class="fas fa-signature mr-2"></i>Histórico de Assinaturas
+            </h3>
+            <p class="mt-1 text-sm text-gray-600">
+                {{ signatures|length }} assinatura{{ 's' if signatures|length != 1 else '' }} registrada{{ 's' if signatures|length != 1 else '' }}
+            </p>
+        </div>
+
+        {% if signatures %}
+        <div class="divide-y divide-gray-200">
+            {% for signature in signatures %}
+            <div class="px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <!-- Signature Status -->
+                            <div class="flex-shrink-0">
+                                {% if signature.is_valid %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Válida
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>Inválida
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Signature Type -->
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if signature.signature_type.value == 'approval' %}bg-green-100 text-green-800
+                                {% elif signature.signature_type.value == 'review' %}bg-blue-100 text-blue-800
+                                {% elif signature.signature_type.value == 'publication' %}bg-purple-100 text-purple-800
+                                {% elif signature.signature_type.value == 'reading' %}bg-gray-100 text-gray-800
+                                {% else %}bg-indigo-100 text-indigo-800{% endif %}">
+                                {% if signature.signature_type.value == 'approval' %}Aprovação
+                                {% elif signature.signature_type.value == 'review' %}Revisão
+                                {% elif signature.signature_type.value == 'publication' %}Publicação
+                                {% elif signature.signature_type.value == 'reading' %}Leitura
+                                {% else %}{{ signature.signature_type.value|title }}{% endif %}
+                            </span>
+                        </div>
+
+                        <!-- User Info -->
+                        <div class="mt-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="flex-shrink-0 h-8 w-8">
+                                    <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                                        <span class="text-xs font-medium text-gray-700">
+                                            {{ signature.user.full_name.split()[0][0] }}{% if signature.user.full_name.split()|length > 1 %}{{ signature.user.full_name.split()[1][0] }}{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ signature.user.full_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ signature.user.email }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Signature Details -->
+                        <div class="mt-3 text-sm text-gray-600">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <span class="font-medium">Assinado em:</span>
+                                    <span class="ml-1">{{ signature.signed_at.strftime('%d/%m/%Y %H:%M:%S') }}</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium">IP:</span>
+                                    <span class="ml-1">{{ signature.ip_address or 'N/A' }}</span>
+                                </div>
+                            </div>
+                            {% if signature.context %}
+                            <div class="mt-2">
+                                <span class="font-medium">Contexto:</span>
+                                <span class="ml-1">{{ signature.context }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Certificate Info -->
+                        {% if signature.certificate_info %}
+                        <div class="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <h5 class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2">
+                                Informações do Certificado
+                            </h5>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                <div>ID Usuário: {{ signature.certificate_info.get('user_id', 'N/A') }}</div>
+                                <div>Nome: {{ signature.certificate_info.get('user_name', 'N/A') }}</div>
+                                <div>E-mail: {{ signature.certificate_info.get('user_email', 'N/A') }}</div>
+                                <div>Timestamp: {{ signature.certificate_info.get('timestamp', 'N/A') }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-2">
+                        {% if signature.is_valid %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-shield-alt mr-1"></i>Verificada
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>Problema
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-signature text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma assinatura encontrada</h3>
+            <p class="text-gray-600 mb-6">
+                Este documento ainda não foi assinado digitalmente.
+            </p>
+            <a href="{{ url_for('documents.view', id=document.id) }}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar ao Documento
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

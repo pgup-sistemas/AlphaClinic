@@ -18,9 +18,9 @@
         </div>
     </div>
 
-    <!-- Métricas Principais -->
+    <!-- === MÉTRICAS PRINCIPAIS - SISTEMA COMPLETO === -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Documentos -->
+        <!-- 📄 DOCUMENTOS -->
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
@@ -33,7 +33,10 @@
                                 Total de Documentos
                             </dt>
                             <dd class="text-lg font-medium text-gray-900">
-                                {{ data.total_documents }}
+                                {{ data.documents.total }}
+                            </dd>
+                            <dd class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-check-circle"></i> {{ data.documents.published }} publicados
                             </dd>
                         </dl>
                     </div>
@@ -41,20 +44,23 @@
             </div>
         </div>
 
-        <!-- Documentos em Revisão -->
+        <!-- 🔍 AUDITORIAS -->
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-edit text-2xl text-yellow-600"></i>
+                        <i class="fas fa-clipboard-check text-2xl text-purple-600"></i>
                     </div>
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                Em Revisão
+                                Total de Auditorias
                             </dt>
                             <dd class="text-lg font-medium text-gray-900">
-                                {{ data.documents_in_review }}
+                                {{ data.audits.total }}
+                            </dd>
+                            <dd class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-clock"></i> {{ data.audits.in_progress }} em andamento
                             </dd>
                         </dl>
                     </div>
@@ -62,28 +68,7 @@
             </div>
         </div>
 
-        <!-- Documentos Publicados -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-check-circle text-2xl text-green-600"></i>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">
-                                Publicados
-                            </dt>
-                            <dd class="text-lg font-medium text-gray-900">
-                                {{ data.documents_published }}
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Não Conformidades Abertas -->
+        <!-- ⚠️ NÃO CONFORMIDADES -->
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
@@ -93,10 +78,37 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">
-                                NC Abertas
+                                Não Conformidades
                             </dt>
                             <dd class="text-lg font-medium text-gray-900">
-                                {{ data.open_non_conformities }}
+                                {{ data.non_conformities.total }}
+                            </dd>
+                            <dd class="text-xs text-red-600 mt-1">
+                                <i class="fas fa-exclamation-circle"></i> {{ data.non_conformities.open }} abertas
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🛠️ PLANO CAPA -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-tools text-2xl text-orange-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Planos CAPA
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.capa.total }}
+                            </dd>
+                            <dd class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-check"></i> {{ data.capa.implemented }} implementados
                             </dd>
                         </dl>
                     </div>
@@ -105,77 +117,303 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Minhas Tarefas -->
+    <!-- === MÉTRICAS OPERACIONAIS === -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+        <!-- 🏥 CIPA -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-2xl text-indigo-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Reuniões CIPA
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.cipa.total }}
+                            </dd>
+                            <dd class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-calendar"></i> {{ data.cipa.scheduled }} agendadas
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📈 CICLOS DE MELHORIA -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chart-line text-2xl text-teal-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Ciclos PDCA
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.improvements.total }}
+                            </dd>
+                            <dd class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-check-circle"></i> {{ data.improvements.completed }} concluídos
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📋 KANBAN OPERACIONAL -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-tasks text-2xl text-cyan-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Tarefas Kanban
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.operational.total }}
+                            </dd>
+                            <dd class="text-xs text-yellow-600 mt-1">
+                                <i class="fas fa-clock"></i> {{ data.operational.in_progress }} em andamento
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📧 SISTEMA DE E-MAIL -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-envelope text-2xl text-gray-600"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                E-mails Enviados
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ data.emails.sent }}
+                            </dd>
+                            <dd class="text-xs text-blue-600 mt-1">
+                                <i class="fas fa-clock"></i> {{ data.emails.pending }} pendentes
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === PAINÉIS DETALHADOS === -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+
+        <!-- 📋 MINHAS TAREFAS PESSOAIS -->
         <div class="bg-white shadow rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
-                    <i class="fas fa-tasks mr-2 text-blue-600"></i>
+                    <i class="fas fa-user-check mr-2 text-blue-600"></i>
                     Minhas Tarefas
                 </h3>
-                <div class="space-y-4">
-                    {% if data.my_review_tasks %}
-                        {% for document in data.my_review_tasks %}
+                <div class="space-y-3">
+                    <!-- Documentos para revisar -->
+                    {% if data.my_tasks.review_documents %}
+                        {% for document in data.my_tasks.review_documents %}
                         <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                             <div class="flex items-center space-x-3">
                                 <div class="flex-shrink-0">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        Revisão
+                                        <i class="fas fa-file-alt mr-1"></i> Revisão
                                     </span>
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-medium text-gray-900 truncate">
                                         {{ document.title }}
                                     </p>
-                                    <p class="text-sm text-gray-500">
-                                        Criado por {{ document.creator.full_name }}
+                                </div>
+                            </div>
+                            <a href="{{ url_for('documents.view', id=document.id) }}" class="text-blue-600 hover:text-blue-900 text-sm">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- CAPA atribuídos -->
+                    {% if data.my_tasks.assigned_capa %}
+                        {% for capa in data.my_tasks.assigned_capa %}
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        <i class="fas fa-tools mr-1"></i> CAPA
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {{ capa.title }}
                                     </p>
                                 </div>
                             </div>
-                            <div class="flex-shrink-0">
-                                <a href="{{ url_for('documents.view', id=document.id) }}" 
-                                   class="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                                    Ver
-                                </a>
-                            </div>
+                            <a href="{{ url_for('nonconformities.view_capa', nc_id=capa.non_conformity_id, capa_id=capa.id) }}" class="text-blue-600 hover:text-blue-900 text-sm">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
                         </div>
                         {% endfor %}
-                    {% else %}
+                    {% endif %}
+
+                    {% if not data.my_tasks.review_documents and not data.my_tasks.assigned_capa %}
                         <div class="text-center py-8">
                             <i class="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
                             <p class="text-gray-500">Nenhuma tarefa pendente!</p>
+                            <p class="text-xs text-gray-400 mt-2">Todas as suas atividades estão em dia</p>
                         </div>
                     {% endif %}
                 </div>
-                {% if data.my_review_tasks %}
-                <div class="mt-4 text-center">
-                    <a href="{{ url_for('documents.index', status='review') }}" 
-                       class="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                        Ver todos os documentos em revisão →
-                    </a>
-                </div>
-                {% endif %}
             </div>
         </div>
 
-        <!-- Atividades Recentes -->
+        <!-- 📊 STATUS DO SISTEMA -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <i class="fas fa-chart-pie mr-2 text-purple-600"></i>
+                    Status do Sistema
+                </h3>
+                <div class="space-y-4">
+                    <!-- Usuários -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-users text-gray-400 mr-3"></i>
+                            <span class="text-sm text-gray-600">Usuários Ativos</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.system.active_users }}/{{ data.system.users }}</span>
+                    </div>
+
+                    <!-- Equipes -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-friends text-gray-400 mr-3"></i>
+                            <span class="text-sm text-gray-600">Equipes</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.system.teams }}</span>
+                    </div>
+
+                    <!-- Processos -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-sitemap text-gray-400 mr-3"></i>
+                            <span class="text-sm text-gray-600">Processos</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.system.processes }}</span>
+                    </div>
+
+                    <!-- Normas -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-clipboard-check text-gray-400 mr-3"></i>
+                            <span class="text-sm text-gray-600">Normas Ativas</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.system.norms }}</span>
+                    </div>
+
+                    <!-- Notificações -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-bell text-gray-400 mr-3"></i>
+                            <span class="text-sm text-gray-600">Total de Notificações</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.system.total_notifications }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📧 STATUS DE E-MAILS -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <i class="fas fa-envelope mr-2 text-gray-600"></i>
+                    Sistema de E-mail
+                </h3>
+                <div class="space-y-4">
+                    <!-- Enviados -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <span class="text-sm text-gray-600">Enviados</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.emails.sent }}</span>
+                    </div>
+
+                    <!-- Pendentes -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                            <span class="text-sm text-gray-600">Pendentes</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.emails.pending }}</span>
+                    </div>
+
+                    <!-- Falhas -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                            <span class="text-sm text-gray-600">Falhas</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.emails.failed }}</span>
+                    </div>
+
+                    <!-- Total na fila -->
+                    <div class="flex items-center justify-between border-t pt-3">
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-gray-400 mr-3"></i>
+                            <span class="text-sm text-gray-600">Total na Fila</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ data.emails.total_queued }}</span>
+                    </div>
+                </div>
+
+                <!-- Ações rápidas -->
+                <div class="mt-4 pt-4 border-t">
+                    <button onclick="processEmails()" class="w-full bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-play mr-2"></i>Processar E-mails
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === ATIVIDADES RECENTES - EXPANDIDO === -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+
+        <!-- 🔍 ATIVIDADES RECENTES -->
         <div class="bg-white shadow rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                     <i class="fas fa-history mr-2 text-green-600"></i>
-                    Auditorias Recentes
+                    Atividades Recentes
                 </h3>
-                <div class="space-y-4">
-                    {% if data.recent_audits %}
-                        {% for audit in data.recent_audits %}
+                <div class="space-y-3">
+                    <!-- Auditorias recentes -->
+                    {% if data.recent.audits %}
+                        {% for audit in data.recent.audits %}
                         <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                             <div class="flex items-center space-x-3">
                                 <div class="flex-shrink-0">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        {% if audit.status == 'completed' %}bg-green-100 text-green-800
-                                        {% elif audit.status == 'in_progress' %}bg-blue-100 text-blue-800
-                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                        {{ audit.status|title }}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        <i class="fas fa-clipboard-check mr-1"></i> Auditoria
                                     </span>
                                 </div>
                                 <div class="min-w-0 flex-1">
@@ -183,33 +421,126 @@
                                         {{ audit.title }}
                                     </p>
                                     <p class="text-sm text-gray-500">
-                                        {% if audit.norm %}{{ audit.norm.name }}{% endif %}
+                                        {{ audit.created_at.strftime('%d/%m/%Y %H:%M') }}
                                     </p>
                                 </div>
                             </div>
-                            <div class="flex-shrink-0">
-                                <a href="{{ url_for('audits.view', id=audit.id) }}" 
-                                   class="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                                    Ver
-                                </a>
-                            </div>
+                            <a href="{{ url_for('audits.view', id=audit.id) }}" class="text-blue-600 hover:text-blue-900 text-sm">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
                         </div>
                         {% endfor %}
-                    {% else %}
+                    {% endif %}
+
+                    <!-- NCs recentes -->
+                    {% if data.recent.non_conformities %}
+                        {% for nc in data.recent.non_conformities %}
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> NC
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {{ nc.title }}
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        {{ nc.identified_date.strftime('%d/%m/%Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('nonconformities.view', id=nc.id) }}" class="text-blue-600 hover:text-blue-900 text-sm">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- CAPA recentes -->
+                    {% if data.recent.capa %}
+                        {% for capa in data.recent.capa %}
+                        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        <i class="fas fa-tools mr-1"></i> CAPA
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {{ capa.title }}
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        {{ capa.created_at.strftime('%d/%m/%Y') }}
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('nonconformities.view_capa', nc_id=capa.non_conformity_id, capa_id=capa.id) }}" class="text-blue-600 hover:text-blue-900 text-sm">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if not data.recent.audits and not data.recent.non_conformities and not data.recent.capa %}
                         <div class="text-center py-8">
                             <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
-                            <p class="text-gray-500">Nenhuma auditoria recente</p>
+                            <p class="text-gray-500">Nenhuma atividade recente</p>
                         </div>
                     {% endif %}
                 </div>
-                {% if data.recent_audits %}
-                <div class="mt-4 text-center">
-                    <a href="{{ url_for('audits.index') }}" 
-                       class="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                        Ver todas as auditorias →
-                    </a>
+            </div>
+        </div>
+
+        <!-- 📈 VISÃO GERAL DO SISTEMA -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <i class="fas fa-tachometer-alt mr-2 text-indigo-600"></i>
+                    Visão Geral do Sistema
+                </h3>
+
+                <!-- Status dos módulos -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="text-center p-3 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600">{{ data.documents.total }}</div>
+                        <div class="text-xs text-blue-600">Documentos</div>
+                    </div>
+                    <div class="text-center p-3 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600">{{ data.audits.total }}</div>
+                        <div class="text-xs text-purple-600">Auditorias</div>
+                    </div>
+                    <div class="text-center p-3 bg-red-50 rounded-lg">
+                        <div class="text-2xl font-bold text-red-600">{{ data.non_conformities.total }}</div>
+                        <div class="text-xs text-red-600">NCs</div>
+                    </div>
+                    <div class="text-center p-3 bg-orange-50 rounded-lg">
+                        <div class="text-2xl font-bold text-orange-600">{{ data.capa.total }}</div>
+                        <div class="text-xs text-orange-600">CAPA</div>
+                    </div>
                 </div>
-                {% endif %}
+
+                <!-- Status operacional -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">CIPA</span>
+                        <span class="text-sm font-medium">{{ data.cipa.total }} reuniões</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Ciclos PDCA</span>
+                        <span class="text-sm font-medium">{{ data.improvements.total }} ativos</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Kanban</span>
+                        <span class="text-sm font-medium">{{ data.operational.total }} tarefas</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-3">
+                        <span class="text-sm text-gray-600">Usuários</span>
+                        <span class="text-sm font-medium">{{ data.system.active_users }}/{{ data.system.users }} ativos</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -268,5 +599,90 @@ setInterval(function() {
         })
         .catch(error => console.error('Error refreshing metrics:', error));
 }, 300000);
+
+// Function to process emails
+function processEmails() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processando...';
+
+    fetch('/process-emails', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Show success message
+        showNotification('E-mails processados com sucesso!', 'success');
+
+        // Refresh dashboard data
+        refreshDashboard();
+    })
+    .catch(error => {
+        console.error('Error processing emails:', error);
+        showNotification('Erro ao processar e-mails', 'error');
+    })
+    .finally(() => {
+        // Re-enable button
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
+
+// Function to refresh dashboard data
+function refreshDashboard() {
+    fetch('{{ url_for("main.dashboard_metrics") }}')
+        .then(response => response.json())
+        .then(data => {
+            // Update email stats
+            updateEmailStats(data.emails);
+
+            // Update last update time
+            if (data.last_update) {
+                document.getElementById('last-update').textContent = data.last_update;
+            }
+        })
+        .catch(error => console.error('Error refreshing dashboard:', error));
+}
+
+// Function to update email statistics display
+function updateEmailStats(emails) {
+    // This would update the email stats in the UI
+    // For now, just log the data
+    console.log('Email stats updated:', emails);
+}
+
+// Function to show notifications
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+    // Add to page
+    document.body.appendChild(notification);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard initialized with real-time metrics');
+});
 </script>
 {% endblock %}

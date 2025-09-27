@@ -1,0 +1,167 @@
+site_name: Alphaclin QMS - Documentação
+site_description: Sistema de Gestão da Qualidade para Clínicas
+site_author: Alphaclin Team
+site_url: https://alphaclin-qms.com/docs
+
+# Repository
+repo_name: alphaclin-qms
+repo_url: https://github.com/alphaclin/qms
+
+# Copyright
+copyright: Copyright &copy; 2025 Alphaclin QMS
+
+# Theme
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.footnote.tooltips
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+    previous: fontawesome/solid/angle-left
+    next: fontawesome/solid/angle-right
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - minify:
+      minify_html: true
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - meta
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: alphaclin
+      repo: qms
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - tables
+  - toc:
+      permalink: true
+
+# Navigation
+nav:
+  - Início: index.md
+  - Instalação:
+      - Guia Rápido: installation/quick-start.md
+      - Instalação Completa: installation/full-setup.md
+      - Configuração: installation/configuration.md
+      - Solução de Problemas: installation/troubleshooting.md
+  - Funcionalidades:
+      - Visão Geral: features/overview.md
+      - Gestão Documental:
+          - Introdução: features/documents/overview.md
+          - Workflow: features/documents/workflow.md
+          - Assinaturas Eletrônicas: features/documents/signatures.md
+          - Versionamento: features/documents/versions.md
+      - Gestão de Qualidade:
+          - Auditorias: features/quality/audits.md
+          - Não Conformidades: features/quality/ncs.md
+          - CAPA: features/quality/capa.md
+      - Operacional:
+          - CIPA: features/operational/cipa.md
+          - Ciclos PDCA: features/operational/pdca.md
+          - Kanban: features/operational/kanban.md
+      - Sistema:
+          - Usuários e Equipes: features/system/users-teams.md
+          - Notificações: features/system/notifications.md
+          - Relatórios: features/system/reports.md
+  - APIs:
+      - REST API: api/rest-api.md
+      - Webhooks: api/webhooks.md
+      - Integrações: api/integrations.md
+  - Desenvolvimento:
+      - Arquitetura: development/architecture.md
+      - Banco de Dados: development/database.md
+      - Segurança: development/security.md
+      - Testes: development/testing.md
+  - Futuro:
+      - Roadmap: future/roadmap.md
+      - Funcionalidades Planejadas: future/features.md
+      - API Mobile: future/mobile-api.md
+      - BI e Analytics: future/bi-analytics.md
+  - Sobre:
+      - Alphaclin QMS: about/overview.md
+      - Licença: about/license.md
+      - Contribuição: about/contributing.md

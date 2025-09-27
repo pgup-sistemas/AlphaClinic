@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}CAPA {{ capa.reference_number }} - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Plano CAPA</h1>
+            <p class="mt-2 text-gray-600">{{ capa.reference_number }}</p>
+        </div>
+        <div class="flex space-x-3">
+            {% if capa.status.value == 'draft' and (current_user.id == capa.created_by_id or current_user.role.value in ['admin', 'manager']) %}
+            <a href="{{ url_for('nonconformities.edit_capa', nc_id=nc.id, capa_id=capa.id) }}"
+               class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-edit mr-2"></i>Editar
+            </a>
+            {% endif %}
+            {% if capa.status.value == 'draft' and current_user.role.value in ['admin', 'manager'] %}
+            <form method="POST" action="{{ url_for('nonconformities.approve_capa', nc_id=nc.id, capa_id=capa.id) }}" class="inline">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-check mr-2"></i>Aprovar
+                </button>
+            </form>
+            {% endif %}
+            {% if capa.status.value == 'approved' and current_user.id == capa.responsible_id %}
+            <a href="{{ url_for('nonconformities.implement_capa', nc_id=nc.id, capa_id=capa.id) }}"
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-play mr-2"></i>Implementar
+            </a>
+            {% endif %}
+            {% if capa.status.value == 'implemented' and current_user.role.value in ['admin', 'manager'] %}
+            <a href="{{ url_for('nonconformities.verify_capa', nc_id=nc.id, capa_id=capa.id) }}"
+               class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-search mr-2"></i>Verificar
+            </a>
+            {% endif %}
+            <a href="{{ url_for('nonconformities.view', id=nc.id) }}"
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if capa.status.value == 'draft' %}bg-gray-100 text-gray-800
+            {% elif capa.status.value == 'approved' %}bg-blue-100 text-blue-800
+            {% elif capa.status.value == 'implemented' %}bg-yellow-100 text-yellow-800
+            {% elif capa.status.value == 'verified' %}bg-purple-100 text-purple-800
+            {% elif capa.status.value == 'closed' %}bg-green-100 text-green-800
+            {% else %}bg-red-100 text-red-800{% endif %}">
+            <i class="fas fa-circle mr-2 text-xs"></i>
+            {{ capa.status.value|title }}
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if capa.capa_type.value == 'corrective' %}bg-red-100 text-red-800
+            {% else %}bg-blue-100 text-blue-800{% endif %}">
+            <i class="fas fa-shield-alt mr-2"></i>
+            {{ 'Corretiva' if capa.capa_type.value == 'corrective' else 'Preventiva' }}
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+            {% if capa.priority == 'critical' %}bg-red-100 text-red-800
+            {% elif capa.priority == 'high' %}bg-orange-100 text-orange-800
+            {% elif capa.priority == 'medium' %}bg-yellow-100 text-yellow-800
+            {% else %}bg-green-100 text-green-800{% endif %}">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Prioridade {{ capa.priority|title }}
+        </span>
+    </div>
+
+    <!-- Não Conformidade Relacionada -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="text-lg font-medium text-blue-900 mb-3">
+            <i class="fas fa-link mr-2"></i>Não Conformidade Relacionada
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <span class="font-medium text-blue-800">Título:</span>
+                <p class="text-blue-700">{{ nc.title }}</p>
+            </div>
+            <div>
+                <span class="font-medium text-blue-800">Severidade:</span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2
+                    {% if nc.severity == 'critical' %}bg-red-100 text-red-800
+                    {% elif nc.severity == 'major' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ nc.severity|title }}
+                </span>
+            </div>
+        </div>
+        <div class="mt-3">
+            <span class="font-medium text-blue-800">Descrição:</span>
+            <p class="text-blue-700 mt-1">{{ nc.description }}</p>
+        </div>
+    </div>
+
+    <!-- 5W2H Section -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Plano de Ação (5W2H)</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- What -->
+                <div class="md:col-span-2">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-question-circle text-blue-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">O QUE (What)</h4>
+                            <p class="mt-1 text-gray-700">{{ capa.what }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Why -->
+                <div class="md:col-span-2">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-search text-green-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">POR QUE (Why)</h4>
+                            <p class="mt-1 text-gray-700">{{ capa.why }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Who -->
+                <div>
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-purple-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">QUEM (Who)</h4>
+                            <p class="mt-1 text-gray-700">{{ capa.who }}</p>
+                            {% if capa.responsible %}
+                            <p class="mt-1 text-sm text-gray-500">Responsável: {{ capa.responsible.full_name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- When -->
+                <div>
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-calendar text-orange-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">QUANDO (When)</h4>
+                            <p class="mt-1 text-gray-700">{{ capa.when.strftime('%d/%m/%Y') }}</p>
+                            {% if capa.target_completion_date %}
+                            <p class="mt-1 text-sm text-gray-500">Meta: {{ capa.target_completion_date.strftime('%d/%m/%Y') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How -->
+                <div class="md:col-span-2">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-cogs text-indigo-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">COMO (How)</h4>
+                            <p class="mt-1 text-gray-700">{{ capa.how }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How Much -->
+                {% if capa.how_much %}
+                <div class="md:col-span-2">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-dollar-sign text-yellow-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">QUANTO (How Much)</h4>
+                            <p class="mt-1 text-gray-700">{{ capa.how_much }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Timeline -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Andamento do CAPA</h3>
+        </div>
+        <div class="p-6">
+            <div class="flow-root">
+                <ul class="-mb-8">
+                    <!-- Criado -->
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div>
+                                    <span class="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-plus text-white text-xs"></i>
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">
+                                        Criado por <span class="font-medium text-gray-900">{{ capa.created_by.full_name }}</span>
+                                        em {{ capa.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Aprovado -->
+                    {% if capa.approved_at %}
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div>
+                                    <span class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-check text-white text-xs"></i>
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">
+                                        Aprovado por <span class="font-medium text-gray-900">{{ capa.approved_by.full_name }}</span>
+                                        em {{ capa.approved_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+
+                    <!-- Implementado -->
+                    {% if capa.implemented_at %}
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex space-x-3">
+                                <div>
+                                    <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-play text-white text-xs"></i>
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">
+                                        Implementado por <span class="font-medium text-gray-900">{{ capa.implemented_by.full_name }}</span>
+                                        em {{ capa.implemented_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                    {% if capa.implementation_notes %}
+                                    <p class="mt-1 text-sm text-gray-700">{{ capa.implementation_notes }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+
+                    <!-- Verificado -->
+                    {% if capa.verified_at %}
+                    <li>
+                        <div class="relative pb-8">
+                            <div class="relative flex space-x-3">
+                                <div>
+                                    <span class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-search text-white text-xs"></i>
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 pt-1.5">
+                                    <p class="text-sm text-gray-500">
+                                        Verificado por <span class="font-medium text-gray-900">{{ capa.verified_by.full_name }}</span>
+                                        em {{ capa.verified_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                    {% if capa.effectiveness_rating %}
+                                    <div class="mt-2">
+                                        <span class="text-sm font-medium text-gray-700">Avaliação de efetividade:</span>
+                                        <div class="flex items-center mt-1">
+                                            {% for i in range(5) %}
+                                            <i class="fas fa-star {% if i < capa.effectiveness_rating %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
+                                            {% endfor %}
+                                            <span class="ml-2 text-sm text-gray-600">{{ capa.effectiveness_rating }}/5</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Details -->
+    {% if capa.verification_result %}
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Resultado da Verificação</h3>
+        </div>
+        <div class="p-6 space-y-4">
+            {% if capa.verification_method %}
+            <div>
+                <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">Método de Verificação</h4>
+                <p class="mt-1 text-gray-700">{{ capa.verification_method }}</p>
+            </div>
+            {% endif %}
+            <div>
+                <h4 class="text-sm font-medium text-gray-900 uppercase tracking-wide">Resultado</h4>
+                <p class="mt-1 text-gray-700">{{ capa.verification_result }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

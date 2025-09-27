@@ -20,7 +20,8 @@ def seed_admin_user():
     """Create default admin user and sample operational data"""
     from models import (
         User, UserRole, CIPAMeeting, ImprovementCycle, Notification,
-        OperationalEvent, ImprovementStatus, NotificationType, Team
+        OperationalEvent, ImprovementStatus, NotificationType, Team,
+        Audit, NonConformity, CAPA, CAPAStatus, CAPAType, AuditType, Norm
     )
     from datetime import datetime, timedelta
 
@@ -185,6 +186,183 @@ def seed_admin_user():
             )
             db.session.add(notification)
 
+    # Create sample CAPA data
+    if NonConformity.query.count() == 0:
+        # Create a sample norm first
+        sample_norm = Norm.query.filter_by(code='ISO9001').first()
+        if not sample_norm:
+            sample_norm = Norm(
+                name='ISO 9001:2015 - Sistema de Gestão da Qualidade',
+                code='ISO9001',
+                description='Norma internacional para sistemas de gestão da qualidade',
+                version='2015',
+                effective_date=datetime.utcnow().date(),
+                is_active=True
+            )
+            db.session.add(sample_norm)
+
+        # Create sample audit
+        sample_audit = Audit(
+            title='Auditoria Interna - Sistema de Gestão da Qualidade',
+            audit_type=AuditType.INTERNAL,
+            norm_id=sample_norm.id,
+            location='Clínica Alphaclin - Todas as áreas',
+            planned_date=datetime.utcnow().date(),
+            actual_date=datetime.utcnow().date(),
+            assigned_auditor_id=admin.id,
+            responsible_id=admin.id,
+            objectives='Verificar conformidade com requisitos da ISO 9001',
+            scope='Todo o sistema de gestão da qualidade',
+            status='completed',
+            progress_percentage=100
+        )
+        db.session.add(sample_audit)
+        db.session.flush()
+
+        # Create sample non-conformity
+        sample_nc = NonConformity(
+            audit_id=sample_audit.id,
+            title='Ausência de procedimento documentado para calibração de equipamentos',
+            description='Durante a auditoria, foi identificado que não existe procedimento documentado para calibração dos equipamentos médicos, violando o requisito 7.1.5.2.1 da ISO 9001.',
+            severity='major',
+            requirement='ISO 9001:2015 - 7.1.5.2.1 - Calibração',
+            identified_by_id=admin.id,
+            assigned_to_id=admin.id,
+            status='open'
+        )
+        db.session.add(sample_nc)
+        db.session.flush()
+
+        # Create sample CAPA
+        sample_capa = CAPA(
+            non_conformity_id=sample_nc.id,
+            capa_type=CAPAType.CORRECTIVE,
+            what='Elaborar e implementar procedimento documentado para calibração de equipamentos médicos',
+            why='Garantir conformidade com requisitos da ISO 9001 e prevenir falhas nos equipamentos',
+            who='Engenheiro Clínico / Equipe de Manutenção',
+            when=datetime.utcnow().date() + timedelta(days=30),
+            how='1. Pesquisar normas aplicáveis; 2. Elaborar procedimento; 3. Treinar equipe; 4. Implementar sistema de calibração',
+            how_much='R$ 5.000,00 (treinamento + equipamentos de calibração)',
+            priority='high',
+            target_completion_date=datetime.utcnow().date() + timedelta(days=30),
+            created_by_id=admin.id,
+            responsible_id=admin.id
+        )
+        sample_capa.generate_reference_number()
+        db.session.add(sample_capa)
+        db.session.flush()
+
+        # Update CAPA to approved status
+        sample_capa.status = CAPAStatus.APPROVED
+        sample_capa.approved_by_id = admin.id
+        sample_capa.approved_at = datetime.utcnow()
+
+        # Update CAPA to implemented status
+        sample_capa.status = CAPAStatus.IMPLEMENTED
+        sample_capa.implemented_by_id = admin.id
+        sample_capa.implemented_at = datetime.utcnow()
+        sample_capa.implementation_notes = 'Procedimento elaborado e aprovado. Treinamento realizado para 15 funcionários. Sistema implementado com agendamento automático de calibrações.'
+        sample_capa.actual_completion_date = datetime.utcnow().date()
+
+        # Update CAPA to verified status
+        sample_capa.status = CAPAStatus.VERIFIED
+        sample_capa.verified_by_id = admin.id
+        sample_capa.verified_at = datetime.utcnow()
+        sample_capa.verification_method = 'Auditoria de acompanhamento e verificação da implementação do procedimento'
+        sample_capa.verification_result = 'Procedimento implementado corretamente. Todos os equipamentos críticos foram calibrados. Sistema de agendamento funcionando.'
+        sample_capa.effectiveness_rating = 5
+        sample_capa.verification_date = datetime.utcnow().date()
+
+        # Close the CAPA
+        sample_capa.status = CAPAStatus.CLOSED
+
+        print("Sample CAPA data created successfully")
+
+        # Create sample document for signature testing
+        sample_document = Document.query.filter_by(title='Procedimento de Calibração de Equipamentos').first()
+        if not sample_document:
+            sample_document = Document(
+                title='Procedimento de Calibração de Equipamentos',
+                code='PROC-CAL-001',
+                content='<h1>Procedimento de Calibração</h1><p>Este documento descreve o procedimento padrão para calibração de equipamentos médicos na Alphaclin.</p><h2>Objetivo</h2><p>Garantir que todos os equipamentos estejam calibrados conforme normas vigentes.</p><h2>Responsabilidades</h2><p>Engenheiro Clínico: Realizar calibração</p><p>Equipe de Manutenção: Apoiar atividades</p>',
+                version='1.0',
+                status=DocumentStatus.PUBLISHED,
+                created_by_id=admin.id,
+                published_by_id=admin.id,
+                published_at=datetime.utcnow(),
+                category='Procedimentos',
+                effective_date=datetime.utcnow().date()
+            )
+            db.session.add(sample_document)
+            db.session.flush()
+
+            # Create sample electronic signatures
+            approval_signature = ElectronicSignature(
+                document_id=sample_document.id,
+                user_id=admin.id,
+                signature_type=SignatureType.APPROVAL,
+                context=f"Aprovação versão {sample_document.version} - {sample_document.title}",
+                ip_address='127.0.0.1',
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                certificate_info={
+                    'user_id': admin.id,
+                    'user_name': admin.full_name,
+                    'user_email': admin.email,
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                signed_at=datetime.utcnow()
+            )
+            content_to_sign = f"{sample_document.title}{sample_document.content}{sample_document.version}{admin.id}{datetime.utcnow().isoformat()}"
+            approval_signature.signature_data = approval_signature.generate_signature_hash(content_to_sign)
+            db.session.add(approval_signature)
+
+            reading_signature = ElectronicSignature(
+                document_id=sample_document.id,
+                user_id=admin.id,
+                signature_type=SignatureType.READING,
+                context=f"Confirmação de leitura - {sample_document.title}",
+                ip_address='127.0.0.1',
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                certificate_info={
+                    'user_id': admin.id,
+                    'user_name': admin.full_name,
+                    'user_email': admin.email,
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                signed_at=datetime.utcnow()
+            )
+            reading_signature.signature_data = reading_signature.generate_signature_hash(content_to_sign)
+            db.session.add(reading_signature)
+
+            print("Sample document and signatures created successfully")
+
+    # Create default email templates
+    try:
+        from email_service import notification_service
+        notification_service.create_default_templates()
+        print("Email templates created successfully")
+    except Exception as e:
+        print(f"Warning: Could not create email templates: {e}")
+
+    # Create notification preferences for admin
+    try:
+        from models import NotificationPreference
+        admin_prefs = NotificationPreference.query.filter_by(user_id=admin.id).first()
+        if not admin_prefs:
+            admin_prefs = NotificationPreference(
+                user_id=admin.id,
+                email_enabled=True,
+                document_notifications=True,
+                audit_notifications=True,
+                capa_notifications=True,
+                operational_notifications=True,
+                system_notifications=True
+            )
+            db.session.add(admin_prefs)
+        print("Notification preferences created successfully")
+    except Exception as e:
+        print(f"Warning: Could not create notification preferences: {e}")
+
     db.session.commit()
     print("Sample operational data created successfully")
 
@@ -232,10 +410,42 @@ def create_app():
     app.register_blueprint(processes_bp, url_prefix='/processes')
     app.register_blueprint(nonconformities_bp, url_prefix='/nonconformities')
     app.register_blueprint(reports_bp, url_prefix='/reports')
+
+    # Documentação integrada
+    from blueprints.docs import docs_bp
+    app.register_blueprint(docs_bp, url_prefix='/docs')
     
     return app
 
 if __name__ == '__main__':
+    app = create_app()
+
+    @app.cli.command('process-emails')
+    def process_emails():
+        """Processar fila de e-mails pendentes"""
+        with app.app_context():
+            try:
+                from email_service import email_service
+                result = email_service.process_email_queue()
+                print(f"E-mails processados: {result['sent']} enviados, {result['failed']} falharam")
+            except Exception as e:
+                print(f"Erro ao processar e-mails: {e}")
+
+    @app.cli.command('create-email-templates')
+    def create_email_templates():
+        """Criar templates de e-mail padrão"""
+        with app.app_context():
+            try:
+                from email_service import notification_service
+                notification_service.create_default_templates()
+                print("Templates de e-mail criados com sucesso!")
+            except Exception as e:
+                print(f"Erro ao criar templates: {e}")
+
+    with app.app_context():
+        db.create_all()
+        seed_admin_user()
+    app.run(host='localhost', port=5000, debug=True)
     app = create_app()
     with app.app_context():
         db.create_all()

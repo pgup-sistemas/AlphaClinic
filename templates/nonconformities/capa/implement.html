@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Implementar CAPA {{ capa.reference_number }} - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Implementar Plano CAPA</h1>
+            <p class="mt-2 text-gray-600">{{ capa.reference_number }}</p>
+        </div>
+        <a href="{{ url_for('nonconformities.view_capa', nc_id=nc.id, capa_id=capa.id) }}"
+           class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>Voltar
+        </a>
+    </div>
+
+    <!-- CAPA Summary -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="text-lg font-medium text-blue-900 mb-2">Resumo do Plano</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div><span class="font-medium text-blue-800">O QUE:</span> {{ capa.what }}</div>
+            <div><span class="font-medium text-blue-800">QUANDO:</span> {{ capa.when.strftime('%d/%m/%Y') }}</div>
+            <div><span class="font-medium text-blue-800">QUEM:</span> {{ capa.who }}</div>
+            <div><span class="font-medium text-blue-800">COMO:</span> {{ capa.how }}</div>
+        </div>
+    </div>
+
+    <!-- Implementation Form -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Registro de Implementação</h3>
+            <p class="mt-1 text-sm text-gray-600">Documente como o plano foi executado e os resultados obtidos.</p>
+        </div>
+
+        <form method="POST" class="p-6 space-y-6">
+            <div>
+                <label for="implementation_notes" class="block text-sm font-medium text-gray-700 mb-2">
+                    Notas da Implementação
+                </label>
+                <textarea id="implementation_notes" name="implementation_notes" rows="6"
+                          class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          placeholder="Descreva detalhadamente como o plano foi implementado, os desafios encontrados e os resultados obtidos..." required></textarea>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('nonconformities.view_capa', nc_id=nc.id, capa_id=capa.id) }}"
+                   class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors">
+                    <i class="fas fa-check mr-2"></i>Registrar Implementação
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

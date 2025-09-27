@@ -409,3 +409,294 @@ class OperationalEvent(db.Model):
 
     assigned_to = db.relationship('User', foreign_keys=[assigned_to_id])
     created_by = db.relationship('User', foreign_keys=[created_by_id])
+
+class EmailTemplate(db.Model):
+    """Templates de e-mail para notificações do QMS"""
+    __tablename__ = 'email_templates'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Nome do template
+    subject = db.Column(db.String(255), nullable=False)  # Assunto do e-mail
+    body_html = db.Column(db.Text, nullable=False)  # Corpo HTML
+    body_text = db.Column(db.Text)  # Corpo texto plano (opcional)
+    event_type = db.Column(db.String(50), nullable=False)  # Tipo de evento (document_approved, capa_created, etc.)
+
+    # Controle de versão
+    version = db.Column(db.String(20), default='1.0')
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def render_subject(self, context=None):
+        """Renderiza o assunto com contexto"""
+        if context:
+            return self.subject.format(**context)
+        return self.subject
+
+    def render_body_html(self, context=None):
+        """Renderiza o corpo HTML com contexto"""
+        if context:
+            return self.body_html.format(**context)
+        return self.body_html
+
+    def render_body_text(self, context=None):
+        """Renderiza o corpo texto com contexto"""
+        if self.body_text and context:
+            return self.body_text.format(**context)
+        elif self.body_text:
+            return self.body_text
+        # Fallback: converter HTML para texto
+        import re
+        text = re.sub(r'<[^>]+>', '', self.body_html)
+        return text.strip()
+
+class EmailQueue(db.Model):
+    """Fila de e-mails para envio assíncrono"""
+    __tablename__ = 'email_queue'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Destinatários
+    to_email = db.Column(db.String(255), nullable=False)
+    to_name = db.Column(db.String(255))
+    cc_emails = db.Column(db.JSON)  # Lista de e-mails CC
+    bcc_emails = db.Column(db.JSON)  # Lista de e-mails BCC
+
+    # Conteúdo
+    subject = db.Column(db.String(255), nullable=False)
+    body_html = db.Column(db.Text, nullable=False)
+    body_text = db.Column(db.Text)
+
+    # Controle de envio
+    status = db.Column(db.String(20), default='pending')  # pending, sent, failed, cancelled
+    priority = db.Column(db.String(10), default='normal')  # low, normal, high, urgent
+
+    # Tentativas de envio
+    max_retries = db.Column(db.Integer, default=3)
+    retry_count = db.Column(db.Integer, default=0)
+    last_attempt = db.Column(db.DateTime)
+    next_attempt = db.Column(db.DateTime)
+
+    # Metadados
+    template_id = db.Column(db.Integer, db.ForeignKey('email_templates.id'))
+    event_type = db.Column(db.String(50))  # Tipo de evento que gerou o e-mail
+    context_data = db.Column(db.JSON)  # Dados do contexto para reenvio
+
+    # Logs
+    error_message = db.Column(db.Text)
+    sent_at = db.Column(db.DateTime)
+
+    # Relacionamentos
+    template = db.relationship('EmailTemplate', backref='queued_emails')
+
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def mark_sent(self):
+        """Marca e-mail como enviado"""
+        self.status = 'sent'
+        self.sent_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+
+    def mark_failed(self, error_message=None):
+        """Marca e-mail como falha"""
+        self.status = 'failed'
+        self.error_message = error_message
+        self.last_attempt = datetime.utcnow()
+        self.retry_count += 1
+
+        # Calcular próximo tentativa (exponential backoff)
+        if self.retry_count < self.max_retries:
+            delay_minutes = 2 ** self.retry_count  # 2, 4, 8 minutos
+            self.next_attempt = datetime.utcnow() + timedelta(minutes=delay_minutes)
+            self.status = 'pending'
+        else:
+            self.status = 'failed'
+
+        self.updated_at = datetime.utcnow()
+
+class NotificationPreference(db.Model):
+    """Preferências de notificação por usuário"""
+    __tablename__ = 'notification_preferences'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Tipos de notificação
+    email_enabled = db.Column(db.Boolean, default=True)
+    whatsapp_enabled = db.Column(db.Boolean, default=False)  # Para futuro
+
+    # Eventos específicos
+    document_notifications = db.Column(db.Boolean, default=True)  # Novos documentos, aprovações
+    audit_notifications = db.Column(db.Boolean, default=True)    # Auditorias, NCs
+    capa_notifications = db.Column(db.Boolean, default=True)     # CAPA updates
+    operational_notifications = db.Column(db.Boolean, default=True)  # CIPA, melhorias
+    system_notifications = db.Column(db.Boolean, default=True)   # Avisos do sistema
+
+    # Frequência
+    frequency = db.Column(db.String(20), default='immediate')  # immediate, daily, weekly
+
+    # Relacionamento
+    user = db.relationship('User', backref='notification_preferences')
+
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class SignatureType(Enum):
+    """Tipos de assinatura"""
+    APPROVAL = "approval"      # Aprovação de documento
+    REVIEW = "review"         # Revisão de documento
+    PUBLICATION = "publication" # Publicação de documento
+    READING = "reading"       # Confirmação de leitura
+    CAPA_APPROVAL = "capa_approval"  # Aprovação de CAPA
+    CAPA_IMPLEMENTATION = "capa_implementation"  # Implementação de CAPA
+    CAPA_VERIFICATION = "capa_verification"  # Verificação de CAPA
+
+class ElectronicSignature(db.Model):
+    """Assinatura Eletrônica Digital"""
+    __tablename__ = 'electronic_signatures'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Relacionamentos
+    document_id = db.Column(db.Integer, db.ForeignKey('documents.id'))
+    capa_id = db.Column(db.Integer, db.ForeignKey('capa.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Tipo e contexto
+    signature_type = db.Column(db.Enum(SignatureType), nullable=False)
+    context = db.Column(db.String(255))  # Ex: "Aprovação versão 1.2"
+
+    # Dados da assinatura
+    signature_data = db.Column(db.Text, nullable=False)  # Dados criptográficos
+    certificate_info = db.Column(db.JSON)  # Info do certificado digital
+    ip_address = db.Column(db.String(45))  # IPv4/IPv6
+    user_agent = db.Column(db.Text)  # Browser/device info
+
+    # Status e validação
+    is_valid = db.Column(db.Boolean, default=True)
+    validation_message = db.Column(db.Text)
+    revocation_reason = db.Column(db.Text)
+
+    # Timestamps
+    signed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)  # Data de expiração da assinatura
+    revoked_at = db.Column(db.DateTime)
+
+    # Relacionamentos
+    document = db.relationship('Document', backref='signatures')
+    capa = db.relationship('CAPA', backref='signatures')
+    user = db.relationship('User', backref='signatures')
+
+    def generate_signature_hash(self, content: str) -> str:
+        """Gera hash criptográfico do conteúdo para assinatura"""
+        import hashlib
+        return hashlib.sha256(f"{content}{self.signed_at.isoformat()}{self.user_id}".encode()).hexdigest()
+
+    def verify_signature(self, content: str) -> bool:
+        """Verifica se a assinatura é válida"""
+        expected_hash = self.generate_signature_hash(content)
+        return self.signature_data == expected_hash
+
+    def to_dict(self):
+        """Converte para dicionário para API/JSON"""
+        return {
+            'id': self.id,
+            'signature_type': self.signature_type.value,
+            'context': self.context,
+            'user': {
+                'id': self.user.id,
+                'full_name': self.user.full_name,
+                'role': self.user.role.value
+            },
+            'signed_at': self.signed_at.isoformat(),
+            'is_valid': self.is_valid,
+            'ip_address': self.ip_address
+        }
+
+class CAPAStatus(Enum):
+    """Status do CAPA"""
+    DRAFT = "draft"
+    APPROVED = "approved"
+    IMPLEMENTED = "implemented"
+    VERIFIED = "verified"
+    CLOSED = "closed"
+    CANCELLED = "cancelled"
+
+class CAPAType(Enum):
+    """Tipo de ação: Corretiva ou Preventiva"""
+    CORRECTIVE = "corrective"
+    PREVENTIVE = "preventive"
+
+class CAPA(db.Model):
+    """Plano de Ação Corretiva e Preventiva (CAPA)"""
+    __tablename__ = 'capa'
+
+    id = db.Column(db.Integer, primary_key=True)
+    non_conformity_id = db.Column(db.Integer, db.ForeignKey('non_conformities.id'), nullable=False)
+
+    # Tipo e identificação
+    capa_type = db.Column(db.Enum(CAPAType), nullable=False)
+    reference_number = db.Column(db.String(50), unique=True)  # Ex: CAPA-2025-001
+
+    # 5W2H - What, Why, Who, When, How, How Much
+    what = db.Column(db.Text, nullable=False)  # O que será feito
+    why = db.Column(db.Text, nullable=False)  # Por que será feito
+    who = db.Column(db.Text, nullable=False)  # Quem fará
+    when = db.Column(db.Date, nullable=False)  # Quando será feito
+    how = db.Column(db.Text, nullable=False)  # Como será feito
+    how_much = db.Column(db.Text)  # Quanto custará (opcional)
+
+    # Status e controle
+    status = db.Column(db.Enum(CAPAStatus), default=CAPAStatus.DRAFT)
+    priority = db.Column(db.String(20), default='medium')  # low, medium, high, critical
+
+    # Aprovação
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    approved_at = db.Column(db.DateTime)
+
+    # Implementação
+    implemented_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    implemented_at = db.Column(db.DateTime)
+    implementation_notes = db.Column(db.Text)
+
+    # Verificação de efetividade
+    verified_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    verified_at = db.Column(db.DateTime)
+    verification_method = db.Column(db.Text)  # Como verificar se foi efetivo
+    verification_result = db.Column(db.Text)  # Resultado da verificação
+    effectiveness_rating = db.Column(db.Integer)  # 1-5 escala de efetividade
+
+    # Datas de controle
+    target_completion_date = db.Column(db.Date)
+    actual_completion_date = db.Column(db.Date)
+    verification_date = db.Column(db.Date)
+
+    # Responsáveis
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    responsible_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # Relacionamentos
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    non_conformity = db.relationship('NonConformity', backref='capa_plans')
+    created_by = db.relationship('User', foreign_keys=[created_by_id])
+    responsible = db.relationship('User', foreign_keys=[responsible_id])
+    approved_by = db.relationship('User', foreign_keys=[approved_by_id])
+    implemented_by = db.relationship('User', foreign_keys=[implemented_by_id])
+    verified_by = db.relationship('User', foreign_keys=[verified_by_id])
+
+    def generate_reference_number(self):
+        """Gera número de referência único para o CAPA"""
+        year = datetime.utcnow().year
+        # Conta CAPAs do ano atual
+        count = CAPA.query.filter(
+            CAPA.created_at >= datetime(year, 1, 1),
+            CAPA.created_at < datetime(year + 1, 1, 1)
+        ).count() + 1
+        self.reference_number = f"CAPA-{year}-{count:03d}"

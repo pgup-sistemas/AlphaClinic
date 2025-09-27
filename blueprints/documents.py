@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from models import Document, DocumentFolder, DocumentVersion, DocumentAttachment, DocumentRead, DocumentStatus, Norm, db
+from models import Document, DocumentFolder, DocumentVersion, DocumentAttachment, DocumentRead, DocumentStatus, Norm, ElectronicSignature, SignatureType, db
 import os
 from datetime import datetime
 
@@ -296,5 +296,149 @@ def upload_attachment(id):
         db.session.commit()
         
         flash('Anexo carregado com sucesso!', 'success')
-    
+
     return redirect(url_for('documents.edit', id=id))
+
+# ==================== ELECTRONIC SIGNATURES ====================
+
+@documents_bp.route('/<int:id>/sign/<signature_type>', methods=['GET', 'POST'])
+@login_required
+def sign_document(id, signature_type):
+    """Assinar documento eletronicamente"""
+    document = Document.query.get_or_404(id)
+
+    # Validate signature type
+    try:
+        sig_type = SignatureType(signature_type)
+    except ValueError:
+        flash('Tipo de assinatura inválido.', 'error')
+        return redirect(url_for('documents.view', id=id))
+
+    # Check permissions based on signature type
+    if sig_type == SignatureType.APPROVAL and document.status != DocumentStatus.REVIEW:
+        flash('Documento deve estar em revisão para aprovação.', 'error')
+        return redirect(url_for('documents.view', id=id))
+
+    if sig_type == SignatureType.REVIEW and document.status != DocumentStatus.REVIEW:
+        flash('Documento deve estar em revisão para ser revisado.', 'error')
+        return redirect(url_for('documents.view', id=id))
+
+    if sig_type == SignatureType.PUBLICATION and document.status != DocumentStatus.REVIEW:
+        flash('Documento deve estar em revisão para publicação.', 'error')
+        return redirect(url_for('documents.view', id=id))
+
+    # Check if user already signed this type
+    existing_signature = ElectronicSignature.query.filter_by(
+        document_id=id,
+        user_id=current_user.id,
+        signature_type=sig_type
+    ).first()
+
+    if existing_signature:
+        flash('Você já assinou este documento neste contexto.', 'warning')
+        return redirect(url_for('documents.view', id=id))
+
+    if request.method == 'POST':
+        # Create electronic signature
+        signature = ElectronicSignature(
+            document_id=id,
+            user_id=current_user.id,
+            signature_type=sig_type,
+            context=f"Assinatura de {sig_type.value} - {document.title} v{document.version}",
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent', ''),
+            certificate_info={
+                'user_id': current_user.id,
+                'user_name': current_user.full_name,
+                'user_email': current_user.email,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
+
+        # Generate signature hash
+        content_to_sign = f"{document.title}{document.content}{document.version}{current_user.id}{datetime.utcnow().isoformat()}"
+        signature.signature_data = signature.generate_signature_hash(content_to_sign)
+
+        db.session.add(signature)
+
+        # Update document status based on signature type
+        if sig_type == SignatureType.APPROVAL:
+            document.status = DocumentStatus.PUBLISHED
+            document.published_by_id = current_user.id
+            document.published_at = datetime.utcnow()
+
+            # Send notification to document creator
+            try:
+                from email_service import notification_service
+                notification_service.send_notification(
+                    user_id=document.created_by_id,
+                    event_type='document_approved',
+                    context_data={
+                        'document_title': document.title,
+                        'document_code': document.code,
+                        'document_version': document.version,
+                        'approved_by': current_user.full_name,
+                        'document_url': url_for('documents.view', id=document.id, _external=True)
+                    },
+                    priority='high'
+                )
+            except Exception as e:
+                print(f"Warning: Could not send document approval notification: {e}")
+
+            flash('Documento aprovado e publicado com sucesso!', 'success')
+
+        elif sig_type == SignatureType.REVIEW:
+            document.reviewed_by_id = current_user.id
+            flash('Documento revisado com sucesso!', 'success')
+
+        db.session.commit()
+
+        return redirect(url_for('documents.view', id=id))
+
+    return render_template('documents/sign.html', document=document, signature_type=sig_type)
+
+@documents_bp.route('/<int:id>/signatures')
+@login_required
+def document_signatures(id):
+    """Ver histórico de assinaturas do documento"""
+    document = Document.query.get_or_404(id)
+
+    signatures = ElectronicSignature.query.filter_by(document_id=id).order_by(
+        ElectronicSignature.signed_at.desc()
+    ).all()
+
+    return render_template('documents/signatures.html', document=document, signatures=signatures)
+
+@documents_bp.route('/<int:id>/verify-signatures')
+@login_required
+def verify_signatures(id):
+    """Verificar validade das assinaturas do documento"""
+    document = Document.query.get_or_404(id)
+
+    signatures = ElectronicSignature.query.filter_by(document_id=id).all()
+    verification_results = []
+
+    for signature in signatures:
+        content_to_verify = f"{document.title}{document.content}{document.version}{signature.user_id}{signature.signed_at.isoformat()}"
+        is_valid = signature.verify_signature(content_to_verify)
+
+        verification_results.append({
+            'signature': signature,
+            'is_valid': is_valid,
+            'expected_hash': signature.generate_signature_hash(content_to_verify),
+            'actual_hash': signature.signature_data
+        })
+
+    return render_template('documents/verify_signatures.html',
+                         document=document,
+                         verification_results=verification_results)
+
+@documents_bp.route('/api/signatures/<int:id>')
+@login_required
+def signatures_api(id):
+    """API para obter assinaturas de um documento"""
+    signatures = ElectronicSignature.query.filter_by(document_id=id).order_by(
+        ElectronicSignature.signed_at.desc()
+    ).all()
+
+    return jsonify([sig.to_dict() for sig in signatures])
