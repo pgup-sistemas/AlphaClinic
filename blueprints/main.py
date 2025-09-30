@@ -1,18 +1,76 @@
-from flask import Blueprint, render_template, jsonify
+import socket
+from flask import Blueprint, render_template, jsonify, url_for, redirect
 from flask_login import login_required, current_user
 from models import (
     Document, Audit, NonConformity, User, DocumentStatus,
     CAPA, CIPAMeeting, ImprovementCycle, OperationalEvent,
     Notification, Team, Process, Norm, EmailQueue,
-    ImprovementStatus, CAPAStatus, db
+    ImprovementStatus, CAPAStatus, AnalyticsMetric, AnalyticsData, db
 )
 from sqlalchemy import func
 from datetime import datetime, timedelta
 
+def get_local_ip():
+    """Obtém o endereço IP local da máquina"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        return "127.0.0.1"
+
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
+def index():
+    """Página inicial com informações de acesso"""
+    # Se usuário não estiver logado, redirecionar para login
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.login'))
+
+    # Se usuário estiver logado, redirecionar para dashboard
+    return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/admin/users')
 @login_required
+def admin_users_redirect():
+    """Redireciona rota incorreta /admin/users para /users/"""
+    return redirect(url_for('users.index'))
+
+@main_bp.route('/favicon.ico')
+def favicon():
+    """Serve favicon.ico"""
+    return redirect(url_for('static', filename='favicon.ico'))
+
+@main_bp.route('/status')
+def system_status():
+    """Página de status do sistema"""
+    local_ip = get_local_ip()
+    port = 5000
+
+    # Coletar estatísticas básicas
+    try:
+        total_users = User.query.count()
+        total_documents = Document.query.count()
+        total_teams = Team.query.count()
+        total_audits = Audit.query.count()
+    except:
+        total_users = total_documents = total_teams = total_audits = 0
+
+    return render_template('status.html',
+                         local_ip=local_ip,
+                         port=port,
+                         stats={
+                             'users': total_users,
+                             'documents': total_documents,
+                             'teams': total_teams,
+                             'audits': total_audits
+                         })
+
+@login_required
+@main_bp.route('/dashboard')
 def dashboard():
     """Dashboard completo com métricas dinâmicas de todas as funcionalidades"""
 
@@ -85,6 +143,12 @@ def dashboard():
 
     # === NORMAS ===
     total_norms = Norm.query.filter_by(is_active=True).count()
+
+    # === ANALYTICS ===
+    total_metrics = AnalyticsMetric.query.count()
+    total_data_points = AnalyticsData.query.count()
+    last_collection = AnalyticsData.query.order_by(AnalyticsData.calculated_at.desc()).first()
+    last_collection_date = last_collection.calculated_at.strftime('%d/%m/%Y %H:%M') if last_collection else 'Nunca'
 
     # === TAREFAS PESSOAIS ===
     my_review_tasks = Document.query.filter_by(

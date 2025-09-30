@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Status do Sistema - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="mx-auto h-24 w-24 bg-gradient-to-r from-green-600 to-blue-600 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-server text-3xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                Status do Sistema
+            </h1>
+            <p class="text-lg text-gray-600">
+                Informações técnicas e estatísticas do Alphaclin QMS
+            </p>
+        </div>
+
+        <!-- System Information -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                Informações do Sistema
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Network Information -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🌐 Informações de Rede</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="text-gray-600">IP Local:</span>
+                            <span class="font-mono font-semibold text-gray-900">{{ local_ip }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                            <span class="text-gray-600">Porta:</span>
+                            <span class="font-mono font-semibold text-gray-900">{{ port }}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                            <span class="text-gray-600">Status:</span>
+                            <span class="font-semibold text-green-600">
+                                <i class="fas fa-check-circle mr-1"></i>Online
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access URLs -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🔗 URLs de Acesso</h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                            <div class="text-sm text-gray-600 mb-1">Acesso Local</div>
+                            <div class="font-mono text-blue-600 break-all">
+                                http://localhost:{{ port }}
+                            </div>
+                        </div>
+                        <div class="p-3 bg-green-50 rounded border-l-4 border-green-400">
+                            <div class="text-sm text-gray-600 mb-1">Acesso na Rede</div>
+                            <div class="font-mono text-green-600 break-all">
+                                http://{{ local_ip }}:{{ port }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Statistics -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-database text-green-600 mr-2"></i>
+                Estatísticas do Banco de Dados
+            </h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center p-6 bg-blue-50 rounded-lg">
+                    <i class="fas fa-users text-3xl text-blue-600 mb-3"></i>
+                    <div class="text-2xl font-bold text-blue-900">{{ stats.users }}</div>
+                    <div class="text-sm text-blue-700">Usuários</div>
+                </div>
+
+                <div class="text-center p-6 bg-purple-50 rounded-lg">
+                    <i class="fas fa-file-alt text-3xl text-purple-600 mb-3"></i>
+                    <div class="text-2xl font-bold text-purple-900">{{ stats.documents }}</div>
+                    <div class="text-sm text-purple-700">Documentos</div>
+                </div>
+
+                <div class="text-center p-6 bg-indigo-50 rounded-lg">
+                    <i class="fas fa-user-friends text-3xl text-indigo-600 mb-3"></i>
+                    <div class="text-2xl font-bold text-indigo-900">{{ stats.teams }}</div>
+                    <div class="text-sm text-indigo-700">Equipes</div>
+                </div>
+
+                <div class="text-center p-6 bg-orange-50 rounded-lg">
+                    <i class="fas fa-clipboard-check text-3xl text-orange-600 mb-3"></i>
+                    <div class="text-2xl font-bold text-orange-900">{{ stats.audits }}</div>
+                    <div class="text-sm text-orange-700">Auditorias</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-rocket text-purple-600 mr-2"></i>
+                Ações Rápidas
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="/"
+                   class="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105">
+                    <i class="fas fa-home mr-2"></i>
+                    Página Inicial
+                </a>
+
+                <a href="/auth/login"
+                   class="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Fazer Login
+                </a>
+
+                <a href="/auth/register"
+                   class="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all transform hover:scale-105">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Criar Conta
+                </a>
+            </div>
+        </div>
+
+        <!-- System Requirements -->
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-cog text-gray-600 mr-2"></i>
+                Sobre o Sistema
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">📋 Recursos Disponíveis</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Gestão completa de documentos
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Sistema de auditorias
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Controle de não conformidades
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            CAPA (Ações Corretivas/Preventivas)
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Dashboards e analytics
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-2"></i>
+                            Gestão de equipes e usuários
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3">🔐 Segurança</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex items-center">
+                            <i class="fas fa-shield-alt text-blue-500 mr-2"></i>
+                            Autenticação segura
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-user-lock text-blue-500 mr-2"></i>
+                            Controle de acesso baseado em roles
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-signature text-blue-500 mr-2"></i>
+                            Assinaturas digitais
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-history text-blue-500 mr-2"></i>
+                            Auditoria completa
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Technical Info -->
+            <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                <h4 class="font-semibold text-gray-800 mb-2">🛠️ Informações Técnicas</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Framework:</span>
+                        <span class="font-semibold text-gray-900 ml-2">Flask 2.3+</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Banco:</span>
+                        <span class="font-semibold text-gray-900 ml-2">SQLite</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Python:</span>
+                        <span class="font-semibold text-gray-900 ml-2">3.11+</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-gray-500">
+            <p>Alphaclin QMS - Sistema de Gestão da Qualidade v1.0</p>
+            <p class="text-sm mt-2">Desenvolvido com ❤️ para clínicas e hospitais</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

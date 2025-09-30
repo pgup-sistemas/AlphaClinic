@@ -410,6 +410,414 @@ class OperationalEvent(db.Model):
     assigned_to = db.relationship('User', foreign_keys=[assigned_to_id])
     created_by = db.relationship('User', foreign_keys=[created_by_id])
 
+class AnalyticsMetric(db.Model):
+    """Métricas analíticas para BI"""
+    __tablename__ = 'analytics_metrics'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # documents, audits, ncs, capa, system
+    metric_type = db.Column(db.String(20), nullable=False)  # count, percentage, average, trend
+    calculation_method = db.Column(db.String(100))  # SQL query or Python function
+    refresh_interval = db.Column(db.Integer, default=300)  # seconds
+
+    # Configuração
+    is_active = db.Column(db.Boolean, default=True)
+    target_value = db.Column(db.Float)  # Valor alvo para KPIs
+    warning_threshold = db.Column(db.Float)  # Threshold para alertas
+    critical_threshold = db.Column(db.Float)  # Threshold para alertas críticos
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AnalyticsData(db.Model):
+    """Dados analíticos históricos"""
+    __tablename__ = 'analytics_data'
+
+    id = db.Column(db.Integer, primary_key=True)
+    metric_id = db.Column(db.Integer, db.ForeignKey('analytics_metrics.id'), nullable=False)
+    period = db.Column(db.Date, nullable=False)  # Data do período
+    period_type = db.Column(db.String(20), nullable=False)  # daily, weekly, monthly, yearly
+
+    # Valores
+    value = db.Column(db.Float, nullable=False)
+    previous_value = db.Column(db.Float)
+    change_percentage = db.Column(db.Float)
+    trend = db.Column(db.String(20))  # up, down, stable
+
+    # Metadados
+    calculated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    data_source = db.Column(db.String(50))  # database, api, manual
+
+    # Relacionamentos
+    metric = db.relationship('AnalyticsMetric', backref='data_points')
+
+class DashboardWidget(db.Model):
+    """Widgets customizáveis do dashboard"""
+    __tablename__ = 'dashboard_widgets'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    widget_type = db.Column(db.String(50), nullable=False)  # kpi, chart, table, alert
+    position_x = db.Column(db.Integer, default=0)
+    position_y = db.Column(db.Integer, default=0)
+    width = db.Column(db.Integer, default=1)
+    height = db.Column(db.Integer, default=1)
+
+    # Configuração do widget
+    config = db.Column(db.JSON)  # Configurações específicas do tipo
+    data_source = db.Column(db.String(100))  # Query ou endpoint de dados
+    refresh_interval = db.Column(db.Integer, default=300)  # seconds
+
+    # Visual
+    title = db.Column(db.String(200))
+    icon = db.Column(db.String(50))
+    color_scheme = db.Column(db.String(20), default='blue')
+
+    # Estado
+    is_active = db.Column(db.Boolean, default=True)
+    is_default = db.Column(db.Boolean, default=False)  # Widget padrão para novos usuários
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    user = db.relationship('User', backref='dashboard_widgets')
+
+class DashboardLayout(db.Model):
+    """Layout personalizado do dashboard por usuário"""
+    __tablename__ = 'dashboard_layouts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    layout_name = db.Column(db.String(100), nullable=False, default='default')
+    layout_data = db.Column(db.JSON)  # Posições e configurações dos widgets
+
+    # Configurações
+    columns = db.Column(db.Integer, default=3)
+    auto_refresh = db.Column(db.Boolean, default=True)
+    refresh_interval = db.Column(db.Integer, default=300)
+
+    # Estado
+    is_active = db.Column(db.Boolean, default=True)
+    is_default = db.Column(db.Boolean, default=True)
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    user = db.relationship('User', backref='dashboard_layouts')
+
+class OfflineDocument(db.Model):
+    """Documentos disponíveis offline"""
+    __tablename__ = 'offline_documents'
+
+    id = db.Column(db.Integer, primary_key=True)
+    document_id = db.Column(db.Integer, db.ForeignKey('documents.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Dados offline
+    content_snapshot = db.Column(db.Text)  # Snapshot do conteúdo
+    version_snapshot = db.Column(db.String(50))
+    downloaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)  # Data de expiração do cache
+
+    # Status
+    is_available = db.Column(db.Boolean, default=True)
+    last_sync = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    document = db.relationship('Document', backref='offline_copies')
+    user = db.relationship('User', backref='offline_documents')
+
+class PushNotification(db.Model):
+    """Notificações push para web"""
+    __tablename__ = 'push_notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Conteúdo
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    icon = db.Column(db.String(500))  # URL do ícone
+    badge = db.Column(db.String(500))  # URL do badge
+
+    # Ação
+    action_url = db.Column(db.String(500))  # URL para navegar quando clicar
+    action_text = db.Column(db.String(100))  # Texto do botão de ação
+
+    # Configuração
+    priority = db.Column(db.String(20), default='normal')  # low, normal, high, urgent
+    category = db.Column(db.String(50))  # document, audit, nc, capa, system
+    require_interaction = db.Column(db.Boolean, default=False)  # Se requer ação do usuário
+
+    # Status
+    sent_at = db.Column(db.DateTime)
+    delivered_at = db.Column(db.DateTime)
+    clicked_at = db.Column(db.DateTime)
+    dismissed_at = db.Column(db.DateTime)
+
+    # Controle
+    expires_at = db.Column(db.DateTime)
+    is_read = db.Column(db.Boolean, default=False)
+    read_at = db.Column(db.DateTime)
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    user = db.relationship('User', backref='push_notifications')
+
+class BenchmarkData(db.Model):
+    """Dados de benchmarking setorial"""
+    __tablename__ = 'benchmark_data'
+
+    id = db.Column(db.Integer, primary_key=True)
+    metric_name = db.Column(db.String(100), nullable=False)
+    sector = db.Column(db.String(50), nullable=False)  # healthcare, clinic, hospital
+    region = db.Column(db.String(50))  # state, region, national
+
+    # Estatísticas
+    average_value = db.Column(db.Float, nullable=False)
+    median_value = db.Column(db.Float)
+    percentile_25 = db.Column(db.Float)
+    percentile_75 = db.Column(db.Float)
+    percentile_90 = db.Column(db.Float)
+    min_value = db.Column(db.Float)
+    max_value = db.Column(db.Float)
+    sample_size = db.Column(db.Integer)
+
+    # Período
+    period = db.Column(db.String(20), nullable=False)  # monthly, quarterly, yearly
+    period_date = db.Column(db.Date, nullable=False)
+
+    # Metadados
+    data_source = db.Column(db.String(100))  # Fonte dos dados
+    confidence_level = db.Column(db.Float)  # Nível de confiança (0-1)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AuditLog(db.Model):
+    """Trilha de Auditoria Imutável - Append-Only"""
+    __tablename__ = 'audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sequence_number = db.Column(db.BigInteger, unique=True, nullable=False)  # Número sequencial único
+
+    # Entidade auditada
+    entity_type = db.Column(db.String(50), nullable=False)  # document, user, audit, etc.
+    entity_id = db.Column(db.Integer, nullable=False)
+    entity_code = db.Column(db.String(100))  # Código ou identificador único da entidade
+
+    # Operação realizada
+    operation = db.Column(db.String(50), nullable=False)  # create, update, delete, sign, approve, etc.
+    operation_details = db.Column(db.JSON)  # Detalhes específicos da operação
+
+    # Usuário responsável
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_full_name = db.Column(db.String(255))  # Nome completo no momento da operação
+    user_role = db.Column(db.String(50))  # Papel no momento da operação
+
+    # Dados antes e depois (para updates)
+    old_values = db.Column(db.JSON)  # Valores anteriores
+    new_values = db.Column(db.JSON)  # Valores novos
+
+    # Contexto da operação
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.Text)
+    session_id = db.Column(db.String(100))
+
+    # Integridade e imutabilidade
+    data_hash = db.Column(db.String(128), nullable=False)  # SHA-256 do registro
+    previous_hash = db.Column(db.String(128))  # Hash do registro anterior
+    chain_hash = db.Column(db.String(128), nullable=False)  # Hash da cadeia
+
+    # Compliance
+    compliance_level = db.Column(db.String(20), default='standard')  # standard, critical, restricted
+    retention_period = db.Column(db.Integer)  # Dias para retenção obrigatória
+
+    # Timestamps (imutável)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relacionamentos
+    user = db.relationship('User', backref='audit_logs')
+
+    __table_args__ = (
+        db.Index('idx_audit_logs_sequence', 'sequence_number'),
+        db.Index('idx_audit_logs_entity', 'entity_type', 'entity_id'),
+        db.Index('idx_audit_logs_timestamp', 'timestamp'),
+        db.Index('idx_audit_logs_user', 'user_id'),
+        # Restrição para imutabilidade - não permitir updates
+        {'schema': None}
+    )
+
+    @classmethod
+    def get_next_sequence_number(cls):
+        """Obtém o próximo número sequencial para a cadeia"""
+        max_seq = db.session.query(db.func.max(cls.sequence_number)).scalar()
+        return (max_seq or 0) + 1
+
+    @classmethod
+    def get_last_chain_hash(cls):
+        """Obtém o último hash da cadeia"""
+        last_record = cls.query.order_by(cls.sequence_number.desc()).first()
+        return last_record.chain_hash if last_record else None
+
+    def generate_data_hash(self):
+        """Gera hash SHA-256 dos dados do registro"""
+        import hashlib
+        import json
+
+        # Criar representação canônica dos dados
+        data = {
+            'sequence_number': self.sequence_number,
+            'entity_type': self.entity_type,
+            'entity_id': self.entity_id,
+            'entity_code': self.entity_code,
+            'operation': self.operation,
+            'operation_details': self.operation_details,
+            'user_id': self.user_id,
+            'user_full_name': self.user_full_name,
+            'user_role': self.user_role,
+            'old_values': self.old_values,
+            'new_values': self.new_values,
+            'ip_address': self.ip_address,
+            'user_agent': self.user_agent,
+            'session_id': self.session_id,
+            'timestamp': self.timestamp.isoformat(),
+            'previous_hash': self.previous_hash
+        }
+
+        # Serializar de forma determinística
+        data_str = json.dumps(data, sort_keys=True, default=str, separators=(',', ':'))
+        return hashlib.sha256(data_str.encode('utf-8')).hexdigest()
+
+    def generate_chain_hash(self):
+        """Gera hash da cadeia combinando data_hash com previous_hash"""
+        import hashlib
+        combined = f"{self.previous_hash or ''}{self.data_hash}"
+        return hashlib.sha256(combined.encode('utf-8')).hexdigest()
+
+    def save_immutable(self):
+        """Salva o registro de forma imutável"""
+        # Definir sequência e hashes
+        self.sequence_number = self.get_next_sequence_number()
+        self.previous_hash = self.get_last_chain_hash()
+        self.data_hash = self.generate_data_hash()
+        self.chain_hash = self.generate_chain_hash()
+
+        # Salvar sem permitir updates posteriores
+        db.session.add(self)
+        db.session.commit()
+
+        # Marcar como imutável (não permitir updates)
+        # Nota: Em produção, isso seria implementado no nível do banco
+
+    @classmethod
+    def verify_chain_integrity(cls):
+        """Verifica a integridade de toda a cadeia de auditoria"""
+        records = cls.query.order_by(cls.sequence_number).all()
+        previous_hash = None
+
+        for record in records:
+            # Verificar data hash
+            if record.data_hash != record.generate_data_hash():
+                return False, f"Data hash inválido para registro {record.sequence_number}"
+
+            # Verificar chain hash
+            expected_chain_hash = record.generate_chain_hash()
+            if record.chain_hash != expected_chain_hash:
+                return False, f"Chain hash inválido para registro {record.sequence_number}"
+
+            # Verificar continuidade da cadeia
+            if record.previous_hash != previous_hash:
+                return False, f"Quebra na cadeia em registro {record.sequence_number}"
+
+            previous_hash = record.chain_hash
+
+        return True, "Cadeia de auditoria íntegra"
+
+    def to_dict(self):
+        """Converte para dicionário (apenas leitura)"""
+        return {
+            'sequence_number': self.sequence_number,
+            'entity_type': self.entity_type,
+            'entity_id': self.entity_id,
+            'entity_code': self.entity_code,
+            'operation': self.operation,
+            'operation_details': self.operation_details,
+            'user': {
+                'id': self.user_id,
+                'full_name': self.user_full_name,
+                'role': self.user_role
+            },
+            'old_values': self.old_values,
+            'new_values': self.new_values,
+            'ip_address': self.ip_address,
+            'timestamp': self.timestamp.isoformat(),
+            'data_hash': self.data_hash,
+            'chain_hash': self.chain_hash,
+            'compliance_level': self.compliance_level
+        }
+
+class MachineLearningModel(db.Model):
+    """Modelos de machine learning para predições"""
+    __tablename__ = 'ml_models'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    model_type = db.Column(db.String(50), nullable=False)  # nc_prediction, document_classification, risk_analysis
+    algorithm = db.Column(db.String(50), nullable=False)  # random_forest, neural_network, etc.
+
+    # Modelo serializado
+    model_data = db.Column(db.LargeBinary)  # Modelo treinado serializado
+    model_metadata = db.Column(db.JSON)  # Hiperparâmetros, features, etc.
+
+    # Performance
+    accuracy = db.Column(db.Float)
+    precision = db.Column(db.Float)
+    recall = db.Column(db.Float)
+    f1_score = db.Column(db.Float)
+
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    last_trained = db.Column(db.DateTime)
+    training_data_size = db.Column(db.Integer)
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PredictionResult(db.Model):
+    """Resultados de predições de ML"""
+    __tablename__ = 'prediction_results'
+
+    id = db.Column(db.Integer, primary_key=True)
+    model_id = db.Column(db.Integer, db.ForeignKey('ml_models.id'), nullable=False)
+    prediction_type = db.Column(db.String(50), nullable=False)
+
+    # Dados de entrada
+    input_data = db.Column(db.JSON, nullable=False)
+    prediction_result = db.Column(db.JSON, nullable=False)
+    confidence_score = db.Column(db.Float)
+
+    # Validação
+    actual_result = db.Column(db.JSON)  # Resultado real (quando disponível)
+    is_correct = db.Column(db.Boolean)  # Se a predição estava correta
+
+    # Relacionamentos
+    model = db.relationship('MachineLearningModel', backref='predictions')
+
+    # Metadados
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    validated_at = db.Column(db.DateTime)
+
 class EmailTemplate(db.Model):
     """Templates de e-mail para notificações do QMS"""
     __tablename__ = 'email_templates'
@@ -557,7 +965,7 @@ class SignatureType(Enum):
     CAPA_VERIFICATION = "capa_verification"  # Verificação de CAPA
 
 class ElectronicSignature(db.Model):
-    """Assinatura Eletrônica Digital"""
+    """Assinatura Eletrônica Digital com Suporte a Certificados ICP-Brasil"""
     __tablename__ = 'electronic_signatures'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -573,19 +981,37 @@ class ElectronicSignature(db.Model):
 
     # Dados da assinatura
     signature_data = db.Column(db.Text, nullable=False)  # Dados criptográficos
-    certificate_info = db.Column(db.JSON)  # Info do certificado digital
+    signature_hash = db.Column(db.String(128), nullable=False)  # SHA-256 hash
+    certificate_pem = db.Column(db.Text)  # Certificado X.509 em PEM
+    certificate_chain = db.Column(db.JSON)  # Cadeia de certificados
+    certificate_info = db.Column(db.JSON)  # Info extraída do certificado
+    certificate_issuer = db.Column(db.String(255))  # Emissor do certificado
+    certificate_serial = db.Column(db.String(100))  # Número serial
+    certificate_valid_from = db.Column(db.DateTime)  # Validade início
+    certificate_valid_until = db.Column(db.DateTime)  # Validade fim
+
+    # Timestamping (TSA)
+    timestamp_token = db.Column(db.Text)  # Token TSA
+    timestamp_authority = db.Column(db.String(255))  # Autoridade de timestamp
+    timestamp_hash = db.Column(db.String(128))  # Hash timestamped
+
+    # Contexto da assinatura
     ip_address = db.Column(db.String(45))  # IPv4/IPv6
     user_agent = db.Column(db.Text)  # Browser/device info
+    geolocation = db.Column(db.JSON)  # Dados de geolocalização se disponíveis
 
     # Status e validação
     is_valid = db.Column(db.Boolean, default=True)
     validation_message = db.Column(db.Text)
+    validation_status = db.Column(db.String(50), default='pending')  # pending, valid, invalid, revoked
     revocation_reason = db.Column(db.Text)
+    validation_attempts = db.Column(db.Integer, default=0)
 
     # Timestamps
     signed_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime)  # Data de expiração da assinatura
     revoked_at = db.Column(db.DateTime)
+    last_validated = db.Column(db.DateTime)
 
     # Relacionamentos
     document = db.relationship('Document', backref='signatures')
@@ -593,29 +1019,143 @@ class ElectronicSignature(db.Model):
     user = db.relationship('User', backref='signatures')
 
     def generate_signature_hash(self, content: str) -> str:
-        """Gera hash criptográfico do conteúdo para assinatura"""
+        """Gera hash criptográfico do conteúdo para assinatura usando SHA-256"""
         import hashlib
-        return hashlib.sha256(f"{content}{self.signed_at.isoformat()}{self.user_id}".encode()).hexdigest()
+        content_to_hash = f"{content}{self.signed_at.isoformat()}{self.user_id}{self.context or ''}"
+        return hashlib.sha256(content_to_hash.encode('utf-8')).hexdigest()
+
+    def sign_with_certificate(self, content: str, certificate_pem: str, private_key_pem: str = None) -> bool:
+        """Assina conteúdo usando certificado digital"""
+        try:
+            from cryptography.hazmat.primitives import hashes, serialization
+            from cryptography.hazmat.primitives.asymmetric import padding, rsa
+            from cryptography.x509 import load_pem_x509_certificate
+            from cryptography.hazmat.backends import default_backend
+
+            # Carregar certificado
+            cert = load_pem_x509_certificate(certificate_pem.encode(), default_backend())
+
+            # Extrair informações do certificado
+            self.certificate_pem = certificate_pem
+            self.certificate_issuer = cert.issuer.rfc4514_string()
+            self.certificate_serial = str(cert.serial_number)
+            self.certificate_valid_from = cert.not_valid_before
+            self.certificate_valid_until = cert.not_valid_after
+
+            # Gerar hash do conteúdo
+            content_hash = self.generate_signature_hash(content)
+            self.signature_hash = content_hash
+
+            # Assinar usando chave privada (se fornecida)
+            if private_key_pem:
+                private_key = serialization.load_pem_private_key(
+                    private_key_pem.encode(),
+                    password=None,
+                    backend=default_backend()
+                )
+
+                # Assinar o hash
+                signature = private_key.sign(
+                    content_hash.encode(),
+                    padding.PKCS1v15(),
+                    hashes.SHA256()
+                )
+
+                self.signature_data = signature.hex()
+                self.validation_status = 'valid'
+                return True
+            else:
+                # Fallback para hash simples se não houver chave privada
+                self.signature_data = content_hash
+                self.validation_status = 'pending'
+                return True
+
+        except Exception as e:
+            self.validation_message = str(e)
+            self.validation_status = 'invalid'
+            return False
+
+    def verify_certificate_chain(self) -> bool:
+        """Verifica a cadeia de certificados contra ICP-Brasil"""
+        try:
+            from cryptography.x509 import load_pem_x509_certificate
+            from cryptography.hazmat.backends import default_backend
+
+            if not self.certificate_pem:
+                return False
+
+            cert = load_pem_x509_certificate(self.certificate_pem.encode(), default_backend())
+
+            # Verificar validade temporal
+            now = datetime.utcnow()
+            if now < cert.not_valid_before or now > cert.not_valid_after:
+                self.validation_message = "Certificado expirado ou ainda não válido"
+                return False
+
+            # Verificar se é certificado ICP-Brasil (simplificado)
+            # Em produção, deveria verificar contra lista de certificados confiáveis
+            issuer = cert.issuer
+            if 'ICP-Brasil' not in issuer.rfc4514_string():
+                self.validation_message = "Certificado não é do ICP-Brasil"
+                return False
+
+            self.validation_status = 'valid'
+            self.last_validated = now
+            return True
+
+        except Exception as e:
+            self.validation_message = f"Erro na verificação: {str(e)}"
+            self.validation_status = 'invalid'
+            return False
 
     def verify_signature(self, content: str) -> bool:
         """Verifica se a assinatura é válida"""
-        expected_hash = self.generate_signature_hash(content)
-        return self.signature_data == expected_hash
+        try:
+            expected_hash = self.generate_signature_hash(content)
+
+            # Verificar hash
+            if self.signature_hash != expected_hash:
+                self.validation_message = "Hash da assinatura não corresponde"
+                self.validation_status = 'invalid'
+                return False
+
+            # Verificar certificado se disponível
+            if self.certificate_pem and not self.verify_certificate_chain():
+                return False
+
+            self.validation_status = 'valid'
+            self.is_valid = True
+            return True
+
+        except Exception as e:
+            self.validation_message = str(e)
+            self.validation_status = 'invalid'
+            self.is_valid = False
+            return False
 
     def to_dict(self):
         """Converte para dicionário para API/JSON"""
         return {
             'id': self.id,
-            'signature_type': self.signature_type.value,
+            'signature_type': self.signature_type.value if self.signature_type else None,
             'context': self.context,
             'user': {
                 'id': self.user.id,
                 'full_name': self.user.full_name,
-                'role': self.user.role.value
+                'role': self.user.role.value if self.user.role else None
+            },
+            'certificate_info': {
+                'issuer': self.certificate_issuer,
+                'serial': self.certificate_serial,
+                'valid_from': self.certificate_valid_from.isoformat() if self.certificate_valid_from else None,
+                'valid_until': self.certificate_valid_until.isoformat() if self.certificate_valid_until else None,
+                'is_icp_brasil': 'ICP-Brasil' in (self.certificate_issuer or '')
             },
             'signed_at': self.signed_at.isoformat(),
             'is_valid': self.is_valid,
-            'ip_address': self.ip_address
+            'validation_status': self.validation_status,
+            'ip_address': self.ip_address,
+            'validation_message': self.validation_message
         }
 
 class CAPAStatus(Enum):

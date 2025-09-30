@@ -102,6 +102,7 @@ python setup.py
 
 ### 👥 Para Usuários
 - [Instalação](installation/quick-start.md) - Como instalar e configurar
+- [Solução de Problemas](installation/troubleshooting.md) - Problemas comuns e soluções
 - [Funcionalidades](features/overview.md) - Guia completo das funcionalidades
 - [APIs](api/rest-api.md) - Documentação das APIs
 

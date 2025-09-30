@@ -19,6 +19,7 @@ psycopg2-binary==2.9.7  # PostgreSQL driver
 # Security and Cryptography
 bcrypt==4.0.1
 cryptography==41.0.7
+PyJWT==2.8.0  # Para tokens JWT
 
 # Email
 Flask-Mail==0.9.1
@@ -38,9 +39,21 @@ mkdocs-material==9.4.8
 mkdocs-material-extensions==1.3.1
 pymdown-extensions==10.7
 Markdown==3.5.1
+Pygments==2.18.0
+pymdown-extensions==10.16.1
 
 # Production Deployment
 gunicorn==21.2.0
+
+# BI & Analytics
+pandas==2.1.4
+numpy==1.26.2
+matplotlib==3.8.2
+seaborn==0.13.0
+plotly==5.17.0
+openpyxl==3.1.2
+reportlab==4.0.7
+xhtml2pdf==0.2.11
 
 # Optional: Additional utilities
 click==8.1.7

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Alphaclin QMS{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
@@ -88,7 +90,7 @@
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and not request.endpoint.startswith('auth.') %}
     <!-- Sidebar -->
     <div id="sidebar" class="fixed left-0 top-0 w-64 bg-white shadow-lg transform transition-all duration-300 ease-in-out z-50 -translate-x-full lg:translate-x-0 flex flex-col overflow-y-auto" style="height: calc(100vh - 80px);">
         <div class="flex flex-col h-full">
@@ -159,13 +161,19 @@
                     <span class="sidebar-text ml-3">Relatórios</span>
                 </a>
 
+                <a href="{{ url_for('analytics.analytics_dashboard') }}" title="Analytics & BI"
+                    class="sidebar-link {% if request.blueprint == 'analytics' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                    <i class="fas fa-chart-line sidebar-icon"></i>
+                    <span class="sidebar-text ml-3">Analytics</span>
+                </a>
+
                 <a href="{{ url_for('docs.docs_index') }}" title="Documentação"
                     class="sidebar-link {% if request.blueprint == 'docs' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
                     <i class="fas fa-book sidebar-icon"></i>
                     <span class="sidebar-text ml-3">Documentação</span>
                 </a>
 
-                {% if current_user.role.value in ['admin', 'manager'] %}
+                {% if current_user.is_authenticated and current_user.role.value in ['admin', 'manager'] %}
                 <div class="pt-4 border-t border-gray-200">
                     <a href="{{ url_for('users.index') }}" title="Usuários"
                         class="sidebar-link {% if request.blueprint == 'users' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
@@ -175,8 +183,10 @@
                 </div>
                 {% endif %}
             </nav>
+            {% endif %}
 
             <!-- User Info & Collapse Button -->
+            {% if current_user.is_authenticated %}
             <div class="border-t border-gray-200 p-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center min-w-0 flex-1">
@@ -200,9 +210,11 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 
+    {% if current_user.is_authenticated and not request.endpoint.startswith('auth.') %}
     <!-- Mobile overlay -->
     <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden hidden" aria-hidden="true"></div>
 
@@ -216,9 +228,10 @@
             <div class="w-10"></div> <!-- Spacer -->
         </div>
     </div>
+    {% endif %}
 
     <!-- Main Content -->
-    <main id="main-content" class="lg:ml-64 flex flex-col transition-all duration-300 ease-in-out overflow-auto pb-16">
+    <main id="main-content" class="{% if current_user.is_authenticated and not request.endpoint.startswith('auth.') %}lg:ml-64{% endif %} flex flex-col transition-all duration-300 ease-in-out overflow-auto pb-16">
         <div class="flex-1 px-4 py-6 lg:px-8">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -239,7 +252,7 @@
     </main>
 
     <!-- Footer -->
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and not request.endpoint.startswith('auth.') %}
     <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-3 z-40">
         <div class="px-4 lg:px-8">
             <div class="text-center text-sm text-gray-500">
@@ -247,7 +260,6 @@
             </div>
         </div>
     </footer>
-    {% endif %}
     {% endif %}
 
     <!-- Scripts -->
@@ -264,67 +276,76 @@
 
             let isCollapsed = false;
 
-            // Mobile menu toggle
-            if (mobileMenuButton && sidebar && sidebarOverlay) {
-                mobileMenuButton.addEventListener('click', function() {
-                    sidebar.classList.remove('-translate-x-full');
-                    sidebarOverlay.classList.remove('hidden');
-                });
+            // Only initialize sidebar functionality if sidebar exists
+            if (sidebar) {
+                // Mobile menu toggle
+                if (mobileMenuButton && sidebarOverlay) {
+                    mobileMenuButton.addEventListener('click', function() {
+                        sidebar.classList.remove('-translate-x-full');
+                        sidebarOverlay.classList.remove('hidden');
+                    });
 
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.add('-translate-x-full');
-                    sidebarOverlay.classList.add('hidden');
-                });
-
-                sidebarOverlay.addEventListener('click', function() {
-                    sidebar.classList.add('-translate-x-full');
-                    sidebarOverlay.classList.add('hidden');
-                });
-            }
-
-            // Desktop sidebar collapse toggle
-            if (collapseToggle && collapseIcon && logoText) {
-                collapseToggle.addEventListener('click', function() {
-                    isCollapsed = !isCollapsed;
-
-                    if (isCollapsed) {
-                        // Collapse sidebar
-                        sidebar.classList.remove('w-64');
-                        sidebar.classList.add('w-16');
-                        logoText.classList.add('hidden');
-                        sidebarTexts.forEach(text => text.classList.add('hidden'));
-                        collapseIcon.classList.remove('fa-chevron-left');
-                        collapseIcon.classList.add('fa-chevron-right');
-                    } else {
-                        // Expand sidebar
-                        sidebar.classList.remove('w-16');
-                        sidebar.classList.add('w-64');
-                        logoText.classList.remove('hidden');
-                        sidebarTexts.forEach(text => text.classList.remove('hidden'));
-                        collapseIcon.classList.remove('fa-chevron-right');
-                        collapseIcon.classList.add('fa-chevron-left');
+                    if (sidebarToggle) {
+                        sidebarToggle.addEventListener('click', function() {
+                            sidebar.classList.add('-translate-x-full');
+                            sidebarOverlay.classList.add('hidden');
+                        });
                     }
-                });
-            }
 
-            // Close mobile sidebar on link click
-            const sidebarLinks = document.querySelectorAll('.sidebar-link');
-            sidebarLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    if (window.innerWidth < 1024) { // lg breakpoint
+                    sidebarOverlay.addEventListener('click', function() {
                         sidebar.classList.add('-translate-x-full');
                         sidebarOverlay.classList.add('hidden');
+                    });
+                }
+
+                // Desktop sidebar collapse toggle
+                if (collapseToggle && collapseIcon && logoText) {
+                    collapseToggle.addEventListener('click', function() {
+                        isCollapsed = !isCollapsed;
+
+                        if (isCollapsed) {
+                            // Collapse sidebar
+                            sidebar.classList.remove('w-64');
+                            sidebar.classList.add('w-16');
+                            logoText.classList.add('hidden');
+                            sidebarTexts.forEach(text => text.classList.add('hidden'));
+                            collapseIcon.classList.remove('fa-chevron-left');
+                            collapseIcon.classList.add('fa-chevron-right');
+                        } else {
+                            // Expand sidebar
+                            sidebar.classList.remove('w-16');
+                            sidebar.classList.add('w-64');
+                            logoText.classList.remove('hidden');
+                            sidebarTexts.forEach(text => text.classList.remove('hidden'));
+                            collapseIcon.classList.remove('fa-chevron-right');
+                            collapseIcon.classList.add('fa-chevron-left');
+                        }
+                    });
+                }
+
+                // Close mobile sidebar on link click
+                const sidebarLinks = document.querySelectorAll('.sidebar-link');
+                sidebarLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth < 1024) { // lg breakpoint
+                            sidebar.classList.add('-translate-x-full');
+                            if (sidebarOverlay) {
+                                sidebarOverlay.classList.add('hidden');
+                            }
+                        }
+                    });
+                });
+
+                // Handle window resize
+                window.addEventListener('resize', function() {
+                    if (window.innerWidth >= 1024) { // lg breakpoint
+                        sidebar.classList.remove('-translate-x-full');
+                        if (sidebarOverlay) {
+                            sidebarOverlay.classList.add('hidden');
+                        }
                     }
                 });
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth >= 1024) { // lg breakpoint
-                    sidebar.classList.remove('-translate-x-full');
-                    sidebarOverlay.classList.add('hidden');
-                }
-            });
+            }
         });
     </script>
 

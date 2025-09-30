@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & BI - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg shadow-lg p-8 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">
+                    Analytics & Business Intelligence
+                </h1>
+                <p class="text-xl opacity-90">
+                    Dashboards interativos e métricas em tempo real
+                </p>
+                <p class="mt-4 opacity-75">
+                    Análise avançada dos processos de gestão da qualidade
+                </p>
+            </div>
+            <div class="hidden md:block">
+                <i class="fas fa-chart-line text-6xl opacity-20"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                    <select id="period-select" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="7d">Últimos 7 dias</option>
+                        <option value="30d" selected>Últimos 30 dias</option>
+                        <option value="90d">Últimos 90 dias</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                    <select id="category-select" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">Todas</option>
+                        <option value="documents">Documentos</option>
+                        <option value="audits">Auditorias</option>
+                        <option value="ncs">Não Conformidades</option>
+                        <option value="capa">CAPA</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="refresh-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>Atualizar
+                </button>
+                <button id="export-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exportar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Documents Trend Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                    Tendência de Documentos
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500">Período:</span>
+                    <span id="docs-period" class="text-sm font-medium text-gray-900">30 dias</span>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="documents-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Audits Status Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-pie-chart text-purple-600 mr-2"></i>
+                    Status das Auditorias
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500">Total:</span>
+                    <span id="audits-total" class="text-sm font-medium text-gray-900">-</span>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="audits-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- NC Resolution Time -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-clock text-red-600 mr-2"></i>
+                    Tempo de Resolução de NCs
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500">Média:</span>
+                    <span id="nc-avg-time" class="text-sm font-medium text-gray-900">-</span>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="nc-resolution-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- CAPA Effectiveness -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-star text-orange-600 mr-2"></i>
+                    Efetividade dos CAPAs
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500">Média:</span>
+                    <span id="capa-avg-effectiveness" class="text-sm font-medium text-gray-900">-</span>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="capa-effectiveness-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Documents -->
+        <div class="bg-white rounded-lg shadow-md p-6" id="docs-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-file-alt text-2xl text-blue-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total de Documentos</p>
+                    <p id="total-docs" class="text-2xl font-bold text-gray-900">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Audits -->
+        <div class="bg-white rounded-lg shadow-md p-6" id="audits-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-clipboard-check text-2xl text-purple-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Auditorias Ativas</p>
+                    <p id="active-audits" class="text-2xl font-bold text-gray-900">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open NCs -->
+        <div class="bg-white rounded-lg shadow-md p-6" id="ncs-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">NCs Abertas</p>
+                    <p id="open-ncs" class="text-2xl font-bold text-gray-900">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAPA Effectiveness -->
+        <div class="bg-white rounded-lg shadow-md p-6" id="capa-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-tools text-2xl text-orange-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">CAPAs Ativos</p>
+                    <p id="active-capa" class="text-2xl font-bold text-gray-900">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities Table -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-history text-green-600 mr-2"></i>
+                Atividades Recentes
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- Recent activities will be populated by JavaScript -->
+                        <tr id="loading-row">
+                            <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Carregando atividades...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let documentsChart = null;
+let auditsChart = null;
+let ncResolutionChart = null;
+let capaEffectivenessChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM carregado, inicializando dashboard...');
+
+    initializeCharts();
+    loadDashboardData();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Period selector
+    document.getElementById('period-select').addEventListener('change', function() {
+        loadDashboardData();
+    });
+
+    // Category selector
+    document.getElementById('category-select').addEventListener('change', function() {
+        loadDashboardData();
+    });
+
+    // Refresh button
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+        loadDashboardData();
+    });
+
+    // Export button
+    document.getElementById('export-btn').addEventListener('click', function() {
+        exportDashboardData();
+    });
+}
+
+function initializeCharts() {
+    // Documents Trend Chart
+    const docsCtx = document.getElementById('documents-chart').getContext('2d');
+    documentsChart = new Chart(docsCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Documentos Criados',
+                data: [],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+
+    // Audits Status Chart
+    const auditsCtx = document.getElementById('audits-chart').getContext('2d');
+    auditsChart = new Chart(auditsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(251, 191, 36, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // NC Resolution Time Chart
+    const ncCtx = document.getElementById('nc-resolution-chart').getContext('2d');
+    ncResolutionChart = new Chart(ncCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Tempo Médio de Resolução'],
+            datasets: [{
+                label: 'Dias',
+                data: [],
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Dias'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // CAPA Effectiveness Chart
+    const capaCtx = document.getElementById('capa-effectiveness-chart').getContext('2d');
+    capaEffectivenessChart = new Chart(capaCtx, {
+        type: 'radar',
+        data: {
+            labels: ['1 Estrela', '2 Estrelas', '3 Estrelas', '4 Estrelas', '5 Estrelas'],
+            datasets: [{
+                label: 'Distribuição de Efetividade',
+                data: [],
+                backgroundColor: 'rgba(251, 146, 60, 0.2)',
+                borderColor: 'rgba(251, 146, 60, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(251, 146, 60, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(251, 146, 60, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+
+function loadDashboardData() {
+    const period = document.getElementById('period-select').value;
+    const category = document.getElementById('category-select').value;
+
+    // Show loading state
+    showLoadingState();
+
+    // Fetch data from API
+    fetch(`/analytics/api/metrics`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            updateDashboard(data);
+            hideLoadingState();
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            showErrorState();
+        });
+}
+
+function updateDashboard(data) {
+    // Verificar se os dados existem
+    if (!data) {
+        console.error('Dados não recebidos da API');
+        showErrorState();
+        return;
+    }
+
+    // Update summary cards com verificação de segurança
+    const totalDocs = data.documents && data.documents.total !== undefined ? data.documents.total : 0;
+    const activeAudits = data.audits && data.audits.in_progress !== undefined ? data.audits.in_progress : 0;
+    const openNCs = data.non_conformities && data.non_conformities.open !== undefined ? data.non_conformities.open : 0;
+    const activeCAPA = data.capa && data.capa.implemented !== undefined ? data.capa.implemented : 0;
+
+    document.getElementById('total-docs').textContent = totalDocs;
+    document.getElementById('active-audits').textContent = activeAudits;
+    document.getElementById('open-ncs').textContent = openNCs;
+    document.getElementById('active-capa').textContent = activeCAPA;
+
+    // Update charts
+    updateDocumentsChart(data.documents);
+    updateAuditsChart(data.audits);
+    updateNCResolutionChart(data.non_conformities);
+    updateCAPAEffectivenessChart(data.capa);
+
+    // Update recent activities
+    updateRecentActivities(data);
+}
+
+function updateDocumentsChart(documentsData) {
+    const period = document.getElementById('period-select').value;
+    document.getElementById('docs-period').textContent = period === '7d' ? '7 dias' : period === '30d' ? '30 dias' : '90 dias';
+
+    // Fetch chart data
+    fetch(`/analytics/api/charts/documents_trend?period=${period}`)
+        .then(response => response.json())
+        .then(chartData => {
+            documentsChart.data.labels = chartData.labels;
+            documentsChart.data.datasets[0].data = chartData.datasets[0].data;
+            documentsChart.update();
+        });
+}
+
+function updateAuditsChart(auditsData) {
+    document.getElementById('audits-total').textContent = auditsData.total;
+
+    auditsChart.data.labels = ['Concluídas', 'Em Andamento', 'Planejadas', 'Canceladas'];
+    auditsChart.data.datasets[0].data = [
+        auditsData.completed,
+        auditsData.in_progress,
+        auditsData.planned,
+        0 // cancelled
+    ];
+    auditsChart.update();
+}
+
+function updateNCResolutionChart(ncData) {
+    const avgTime = ncData.average_resolution_time || 0;
+    document.getElementById('nc-avg-time').textContent = `${avgTime.toFixed(1)} dias`;
+
+    ncResolutionChart.data.datasets[0].data = [avgTime];
+    ncResolutionChart.update();
+}
+
+function updateCAPAEffectivenessChart(capaData) {
+    const avgEffectiveness = capaData.average_effectiveness || 0;
+    document.getElementById('capa-avg-effectiveness').textContent = `${avgEffectiveness.toFixed(1)}/5`;
+
+    const distribution = capaData.effectiveness_distribution || {};
+    capaEffectivenessChart.data.datasets[0].data = [
+        distribution['1_star'] || 0,
+        distribution['2_star'] || 0,
+        distribution['3_star'] || 0,
+        distribution['4_star'] || 0,
+        distribution['5_star'] || 0
+    ];
+    capaEffectivenessChart.update();
+}
+
+function updateRecentActivities(data) {
+    const tbody = document.querySelector('#loading-row').parentElement;
+    tbody.innerHTML = '';
+
+    // Combine recent activities from all modules
+    const activities = [];
+
+    // Recent audits
+    if (data.recent && data.recent.audits) {
+        data.recent.audits.forEach(audit => {
+            activities.push({
+                type: 'Auditoria',
+                description: audit.title,
+                date: audit.created_at,
+                status: audit.status,
+                icon: 'fas fa-clipboard-check text-purple-600'
+            });
+        });
+    }
+
+    // Recent NCs
+    if (data.recent && data.recent.non_conformities) {
+        data.recent.non_conformities.forEach(nc => {
+            activities.push({
+                type: 'NC',
+                description: nc.title,
+                date: nc.identified_date,
+                status: nc.status,
+                icon: 'fas fa-exclamation-triangle text-red-600'
+            });
+        });
+    }
+
+    // Recent CAPA
+    if (data.recent && data.recent.capa) {
+        data.recent.capa.forEach(capa => {
+            activities.push({
+                type: 'CAPA',
+                description: capa.title,
+                date: capa.created_at,
+                status: capa.status,
+                icon: 'fas fa-tools text-orange-600'
+            });
+        });
+    }
+
+    // Sort by date (most recent first)
+    activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Show only first 10
+    activities.slice(0, 10).forEach(activity => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <i class="${activity.icon} mr-2"></i>
+                    <span class="text-sm font-medium text-gray-900">${activity.type}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">${activity.description}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${new Date(activity.date).toLocaleDateString('pt-BR')}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    ${activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      activity.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                      activity.status === 'open' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'}">
+                    ${activity.status === 'completed' ? 'Concluída' :
+                      activity.status === 'in_progress' ? 'Em Andamento' :
+                      activity.status === 'open' ? 'Aberta' :
+                      activity.status}
+                </span>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function showLoadingState() {
+    // Show loading indicators
+    document.getElementById('total-docs').textContent = '...';
+    document.getElementById('active-audits').textContent = '...';
+    document.getElementById('open-ncs').textContent = '...';
+    document.getElementById('active-capa').textContent = '...';
+}
+
+function hideLoadingState() {
+    // Loading indicators will be replaced by actual data
+}
+
+function showErrorState() {
+    console.error('Exibindo estado de erro');
+    document.getElementById('total-docs').textContent = 'Erro';
+    document.getElementById('active-audits').textContent = 'Erro';
+    document.getElementById('open-ncs').textContent = 'Erro';
+    document.getElementById('active-capa').textContent = 'Erro';
+
+    // Adicionar indicador visual de erro
+    const cards = ['total-docs', 'active-audits', 'open-ncs', 'active-capa'];
+    cards.forEach(cardId => {
+        const element = document.getElementById(cardId);
+        if (element) {
+            element.style.color = '#ef4444'; // vermelho
+            element.title = 'Erro ao carregar dados';
+        }
+    });
+}
+
+function exportDashboardData() {
+    const period = document.getElementById('period-select').value;
+    const category = document.getElementById('category-select').value;
+
+    // Export documents data as example
+    window.open(`/analytics/export/documents?format=excel&period=${period}`, '_blank');
+}
+
+// Auto-refresh every 5 minutes
+setInterval(function() {
+    loadDashboardData();
+}, 300000);
+</script>
+{% endblock %}

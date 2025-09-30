@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from models import Document, DocumentFolder, DocumentVersion, DocumentAttachment, DocumentRead, DocumentStatus, Norm, ElectronicSignature, SignatureType, db
+from audit_service import AuditService
 import os
 from datetime import datetime
 
@@ -59,12 +60,12 @@ def create():
         
         db.session.add(document)
         db.session.flush()  # Get the document ID
-        
+
         # Associate with norms
         if norm_ids:
             norms = Norm.query.filter(Norm.id.in_(norm_ids)).all()
             document.norms.extend(norms)
-        
+
         # Create initial version
         version = DocumentVersion(
             document_id=document.id,
@@ -74,8 +75,16 @@ def create():
             change_notes='Versão inicial'
         )
         db.session.add(version)
-        
+
         db.session.commit()
+
+        # Log da criação do documento
+        AuditService.log_document_operation(
+            document,
+            'create',
+            details={'initial_version': '1.0', 'norms_count': len(norm_ids) if norm_ids else 0}
+        )
+
         flash('Documento criado com sucesso!', 'success')
         return redirect(url_for('documents.edit', id=document.id))
     
@@ -339,6 +348,10 @@ def sign_document(id, signature_type):
         return redirect(url_for('documents.view', id=id))
 
     if request.method == 'POST':
+        # Obter certificado do formulário (em produção, viria de um repositório seguro)
+        certificate_pem = request.form.get('certificate_pem', '')
+        private_key_pem = request.form.get('private_key_pem', '')  # Apenas para teste
+
         # Create electronic signature
         signature = ElectronicSignature(
             document_id=id,
@@ -351,15 +364,39 @@ def sign_document(id, signature_type):
                 'user_id': current_user.id,
                 'user_name': current_user.full_name,
                 'user_email': current_user.email,
-                'timestamp': datetime.utcnow().isoformat()
+                'timestamp': datetime.utcnow().isoformat(),
+                'has_certificate': bool(certificate_pem)
             }
         )
 
-        # Generate signature hash
+        # Preparar conteúdo para assinatura
         content_to_sign = f"{document.title}{document.content}{document.version}{current_user.id}{datetime.utcnow().isoformat()}"
-        signature.signature_data = signature.generate_signature_hash(content_to_sign)
+
+        # Assinar com certificado se disponível
+        if certificate_pem:
+            success = signature.sign_with_certificate(content_to_sign, certificate_pem, private_key_pem)
+            if not success:
+                flash('Erro na assinatura digital. Verifique o certificado.', 'error')
+                return redirect(url_for('documents.view', id=id))
+        else:
+            # Fallback para assinatura simples (não legalmente válida)
+            signature.signature_data = signature.generate_signature_hash(content_to_sign)
+            signature.validation_status = 'pending'
+            flash('Assinatura realizada sem certificado digital. Para validade legal, use certificado ICP-Brasil.', 'warning')
 
         db.session.add(signature)
+
+        # Log da operação de assinatura
+        AuditService.log_signature_operation(
+            signature,
+            'sign',
+            details={
+                'document_title': document.title,
+                'document_version': document.version,
+                'signature_type': sig_type.value,
+                'has_certificate': bool(certificate_pem)
+            }
+        )
 
         # Update document status based on signature type
         if sig_type == SignatureType.APPROVAL:

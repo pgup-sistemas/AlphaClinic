@@ -34,3 +34,11 @@ class Config:
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', 'on', '1']
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+
+    # Security and Encryption configuration
+    ENCRYPTION_MASTER_KEY = os.environ.get('ALPHACLINIC_ENCRYPTION_KEY') or 'dev-encryption-key-change-in-production-32-chars'
+    API_KEYS = os.environ.get('VALID_API_KEYS', 'dev-api-key-1,dev-api-key-2').split(',')
+
+    # Compliance configuration
+    AUDIT_RETENTION_DAYS = int(os.environ.get('AUDIT_RETENTION_DAYS') or 2555)  # 7 years
+    DOCUMENT_RETENTION_DAYS = int(os.environ.get('DOCUMENT_RETENTION_DAYS') or 2555)  # 7 years

@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash
 from config import Config
 import os
 import datetime
+import socket
 
 # Initialize extensions - import db from models to avoid duplicate instances
 from models import db
@@ -15,6 +16,97 @@ login_manager = LoginManager()
 # Import Flask-WTF for CSRF protection
 # from flask_wtf.csrf import CSRFProtect
 # csrf = CSRFProtect()
+
+def get_local_ip():
+    """Obtém o endereço IP local da máquina"""
+    try:
+        # Criar um socket temporário para determinar o IP local
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        return "127.0.0.1"
+
+def find_available_port(start_port=8000):
+    """Encontra uma porta disponível começando pela porta especificada"""
+    port = start_port
+
+    while port < start_port + 100:  # Tentar até 100 portas acima
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(('0.0.0.0', port))
+            sock.close()
+            return port
+        except OSError:
+            port += 1
+
+    return start_port  # Retornar a original se nenhuma disponível
+
+def check_network_connectivity():
+    """Verifica conectividade de rede e firewall"""
+    local_ip = get_local_ip()
+    port = 8000
+
+    print("Verificando conectividade de rede...")
+
+    # Testar se a porta padrão está disponível
+    try:
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex((local_ip, port))
+        if result == 0:
+            print(f"  [AVISO] Porta {port} ja esta em uso em {local_ip}")
+            print("  Procurando porta alternativa...")
+
+            # Tentar encontrar porta disponível
+            available_port = find_available_port(port + 1)
+            if available_port != port:
+                print(f"  [OK] Porta alternativa encontrada: {available_port}")
+                return available_port
+            else:
+                print(f"  [ERRO] Nenhuma porta alternativa disponivel")
+                return port
+        else:
+            print(f"  [OK] Porta {port} disponivel em {local_ip}")
+            return port
+        sock.close()
+    except Exception as e:
+        print(f"  [ERRO] Nao foi possivel verificar porta: {e}")
+        return port
+
+    # Verificar interfaces de rede
+    try:
+        hostname = socket.gethostname()
+        local_ips = socket.gethostbyname_ex(hostname)[2]
+        print(f"  Interfaces de rede encontradas: {local_ips}")
+    except Exception as e:
+        print(f"  [ERRO] Nao foi possivel obter interfaces: {e}")
+
+def print_startup_info(port=None):
+    """Exibe informações de inicialização do sistema"""
+    if port is None:
+        port = 8000
+
+    print("\n" + "="*60)
+    print("ALPHACLIN QMS - SISTEMA INICIADO COM SUCESSO!")
+    print("="*60)
+    print(f"Acesso Local:     http://localhost:{port}")
+    print(f"Usuario Admin:    admin")
+    print(f"Senha Admin:      admin123")
+    print("="*60)
+    print("Instrucoes para Teste:")
+    print(f"   1. Abra http://localhost:{port} no navegador")
+    print("   2. Use as credenciais acima para fazer login")
+    print("="*60)
+    print("Dicas para Troubleshooting:")
+    print("   - Se nao conseguir acessar:")
+    print(f"   * Certifique-se de que nao ha outro processo usando a porta {port}")
+    print("   * Verifique se o firewall permite conexoes locais")
+    print("="*60 + "\n")
 
 def seed_admin_user():
     """Create default admin user and sample operational data"""
@@ -411,9 +503,21 @@ def create_app():
     app.register_blueprint(nonconformities_bp, url_prefix='/nonconformities')
     app.register_blueprint(reports_bp, url_prefix='/reports')
 
+    # Analytics e BI
+    from blueprints.analytics import analytics_bp
+    app.register_blueprint(analytics_bp, url_prefix='/analytics')
+
     # Documentação integrada
     from blueprints.docs import docs_bp
     app.register_blueprint(docs_bp, url_prefix='/docs')
+
+    # APIs de Integração Empresarial
+    from blueprints.integrations import integrations_bp
+    app.register_blueprint(integrations_bp)
+
+    # Relatórios de Compliance
+    from blueprints.compliance import compliance_bp
+    app.register_blueprint(compliance_bp, url_prefix='/compliance')
     
     return app
 
@@ -442,12 +546,18 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f"Erro ao criar templates: {e}")
 
+    # Inicialização única e completa
     with app.app_context():
         db.create_all()
         seed_admin_user()
-    app.run(host='localhost', port=5000, debug=True)
-    app = create_app()
-    with app.app_context():
-        db.create_all()
-        seed_admin_user()
-    app.run(host='localhost', port=5000, debug=True)
+
+    # Verificar conectividade de rede e encontrar porta disponível
+    port = check_network_connectivity()
+
+    # Exibir informações de inicialização
+    print_startup_info(port)
+
+    # Iniciar servidor apenas em localhost
+    print("Iniciando servidor Flask...")
+    print(f"Configuracao: host='127.0.0.1', port={port}")
+    app.run(host='127.0.0.1', port=port, debug=True)

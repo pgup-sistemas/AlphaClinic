@@ -216,6 +216,33 @@
         </div>
     </div>
 
+    <!-- === ANALYTICS SUMMARY === -->
+    <div class="bg-white shadow rounded-lg p-6 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                <i class="fas fa-chart-line mr-2 text-indigo-600"></i>
+                Analytics & BI
+            </h3>
+            <a href="{{ url_for('analytics.analytics_dashboard') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                Ver Analytics Completo →
+            </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-indigo-50 rounded-lg">
+                <div class="text-2xl font-bold text-indigo-600">{{ data.analytics.total_metrics if data.analytics else '0' }}</div>
+                <div class="text-sm text-indigo-600">Métricas Coletadas</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ data.analytics.total_data_points if data.analytics else '0' }}</div>
+                <div class="text-sm text-green-600">Pontos de Dados</div>
+            </div>
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-sm font-medium text-blue-600">Última Coleta</div>
+                <div class="text-lg font-bold text-blue-800">{{ data.analytics.last_collection if data.analytics else 'Nunca' }}</div>
+            </div>
+        </div>
+    </div>
+
     <!-- === PAINÉIS DETALHADOS === -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
@@ -552,33 +579,40 @@
                 <i class="fas fa-rocket mr-2 text-purple-600"></i>
                 Ações Rápidas
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="{{ url_for('documents.create') }}" 
-                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <a href="{{ url_for('documents.create') }}"
+                    class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <div class="text-center">
                         <i class="fas fa-plus-circle text-2xl text-blue-600 mb-2"></i>
                         <p class="text-sm font-medium text-gray-900">Novo Documento</p>
                     </div>
                 </a>
-                <a href="{{ url_for('audits.create') }}" 
-                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{{ url_for('audits.create') }}"
+                    class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <div class="text-center">
                         <i class="fas fa-search-plus text-2xl text-green-600 mb-2"></i>
                         <p class="text-sm font-medium text-gray-900">Nova Auditoria</p>
                     </div>
                 </a>
-                <a href="{{ url_for('norms.create') }}" 
-                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{{ url_for('norms.create') }}"
+                    class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <div class="text-center">
                         <i class="fas fa-clipboard-check text-2xl text-yellow-600 mb-2"></i>
                         <p class="text-sm font-medium text-gray-900">Nova Norma</p>
                     </div>
                 </a>
-                <a href="{{ url_for('teams.create') }}" 
-                   class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{{ url_for('teams.create') }}"
+                    class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <div class="text-center">
                         <i class="fas fa-user-friends text-2xl text-purple-600 mb-2"></i>
                         <p class="text-sm font-medium text-gray-900">Nova Equipe</p>
+                    </div>
+                </a>
+                <a href="{{ url_for('analytics.analytics_dashboard') }}"
+                    class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="text-center">
+                        <i class="fas fa-chart-line text-2xl text-indigo-600 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-900">Analytics</p>
                     </div>
                 </a>
             </div>
