@@ -24,7 +24,7 @@ class AuditType(Enum):
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -34,6 +34,13 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+
+    __table_args__ = (
+        db.Index('idx_users_role', 'role'),
+        db.Index('idx_users_active', 'is_active'),
+        db.Index('idx_users_last_login', 'last_login'),
+        db.Index('idx_users_email', 'email'),
+    )
     
     # Relacionamentos
     created_documents = db.relationship('Document', foreign_keys='Document.created_by_id', backref='creator', lazy='dynamic')
@@ -87,13 +94,21 @@ class DocumentFolder(db.Model):
 
 class Document(db.Model):
     __tablename__ = 'documents'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     code = db.Column(db.String(100), unique=True)  # Código do documento
     content = db.Column(db.Text)  # Rich text content from editor
     version = db.Column(db.String(50), default='1.0')
     status = db.Column(db.Enum(DocumentStatus), default=DocumentStatus.DRAFT)
+
+    __table_args__ = (
+        db.Index('idx_documents_status', 'status'),
+        db.Index('idx_documents_created_by', 'created_by_id'),
+        db.Index('idx_documents_category', 'category'),
+        db.Index('idx_documents_effective_date', 'effective_date'),
+        db.Index('idx_documents_signature_required', 'signature_required'),
+    )
     
     # Workflow fields
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -178,11 +193,21 @@ class DocumentRead(db.Model):
 
 class Audit(db.Model):
     __tablename__ = 'audits'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     audit_type = db.Column(db.Enum(AuditType), nullable=False)
     norm_id = db.Column(db.Integer, db.ForeignKey('norms.id'))
+
+    __table_args__ = (
+        db.Index('idx_audits_status', 'status'),
+        db.Index('idx_audits_type', 'audit_type'),
+        db.Index('idx_audits_norm', 'norm_id'),
+        db.Index('idx_audits_assigned_auditor', 'assigned_auditor_id'),
+        db.Index('idx_audits_responsible', 'responsible_id'),
+        db.Index('idx_audits_planned_date', 'planned_date'),
+        db.Index('idx_audits_actual_date', 'actual_date'),
+    )
     
     # Audit details
     location = db.Column(db.String(255))
@@ -210,13 +235,22 @@ class Audit(db.Model):
 
 class NonConformity(db.Model):
     __tablename__ = 'non_conformities'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     audit_id = db.Column(db.Integer, db.ForeignKey('audits.id'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     severity = db.Column(db.String(50))  # minor, major, critical
     requirement = db.Column(db.String(255))  # Which norm requirement
+
+    __table_args__ = (
+        db.Index('idx_nonconformities_status', 'status'),
+        db.Index('idx_nonconformities_severity', 'severity'),
+        db.Index('idx_nonconformities_audit', 'audit_id'),
+        db.Index('idx_nonconformities_assigned_to', 'assigned_to_id'),
+        db.Index('idx_nonconformities_identified_date', 'identified_date'),
+        db.Index('idx_nonconformities_target_resolution', 'target_resolution_date'),
+    )
     
     # Status
     status = db.Column(db.String(50), default='open')  # open, in_progress, resolved, closed
@@ -653,6 +687,7 @@ class AuditLog(db.Model):
         db.Index('idx_audit_logs_entity', 'entity_type', 'entity_id'),
         db.Index('idx_audit_logs_timestamp', 'timestamp'),
         db.Index('idx_audit_logs_user', 'user_id'),
+        db.Index('idx_audit_logs_compliance', 'compliance_level', 'timestamp'),
         # Restrição para imutabilidade - não permitir updates
         {'schema': None}
     )
@@ -1172,12 +1207,258 @@ class CAPAType(Enum):
     CORRECTIVE = "corrective"
     PREVENTIVE = "preventive"
 
+class Permission(db.Model):
+    """Permissões granulares do sistema RBAC avançado"""
+    __tablename__ = 'permissions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Nome descritivo da permissão
+    role = db.Column(db.String(50), nullable=False)  # Role que recebe a permissão
+    resource_type = db.Column(db.String(50), nullable=False)  # Tipo do recurso
+    action = db.Column(db.String(50), nullable=False)  # Ação permitida
+    permission_level = db.Column(db.Integer, default=1)  # Nível de permissão
+    conditions = db.Column(db.JSON)  # Condições específicas (ownership, teams, etc.)
+
+    # Controle avançado
+    is_active = db.Column(db.Boolean, default=True)
+    is_temporary = db.Column(db.Boolean, default=False)  # Se é permissão temporária
+    granted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)  # Para permissões temporárias
+    revoked_at = db.Column(db.DateTime)
+    revoked_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    revocation_reason = db.Column(db.Text)
+
+    # Relacionamentos
+    granted_by_user = db.relationship('User', foreign_keys=[granted_by])
+    revoked_by_user = db.relationship('User', foreign_keys=[revoked_by])
+
+    __table_args__ = (
+        db.Index('idx_permissions_role', 'role'),
+        db.Index('idx_permissions_resource', 'resource_type', 'action'),
+        db.Index('idx_permissions_active', 'is_active'),
+        db.Index('idx_permissions_temporary', 'is_temporary', 'expires_at'),
+        db.UniqueConstraint('role', 'resource_type', 'action', name='unique_role_resource_action'),
+    )
+
+    @classmethod
+    def get_user_permissions(cls, user_role, include_inactive=False):
+        """Obtém permissões específicas de um role"""
+        query = cls.query.filter_by(role=user_role)
+        if not include_inactive:
+            query = query.filter_by(is_active=True)
+
+        # Filtrar permissões não expiradas
+        now = datetime.utcnow()
+        query = query.filter(
+            db.or_(
+                cls.expires_at.is_(None),  # Permissões permanentes
+                cls.expires_at > now       # Permissões não expiradas
+            )
+        )
+
+        return query.all()
+
+    def is_expired(self):
+        """Verifica se permissão está expirada"""
+        if not self.is_temporary or not self.expires_at:
+            return False
+        return datetime.utcnow() > self.expires_at
+
+    def revoke(self, revoked_by_user_id, reason=None):
+        """Revoga permissão"""
+        self.is_active = False
+        self.revoked_at = datetime.utcnow()
+        self.revoked_by = revoked_by_user_id
+        self.revocation_reason = reason
+
+    def to_dict(self):
+        """Converte para dicionário"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'role': self.role,
+            'resource_type': self.resource_type,
+            'action': self.action,
+            'permission_level': self.permission_level,
+            'conditions': self.conditions,
+            'is_active': self.is_active,
+            'is_temporary': self.is_temporary,
+            'granted_at': self.granted_at.isoformat(),
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'is_expired': self.is_expired()
+        }
+
+    @classmethod
+    def get_user_permissions(cls, user_role):
+        """Obtém permissões específicas de um role"""
+        return cls.query.filter_by(
+            role=user_role,
+            is_active=True
+        ).all()
+
+    def to_dict(self):
+        """Converte para dicionário"""
+        return {
+            'id': self.id,
+            'role': self.role,
+            'resource_type': self.resource_type,
+            'action': self.action,
+            'permission_level': self.permission_level,
+            'conditions': self.conditions,
+            'is_active': self.is_active,
+            'granted_at': self.granted_at.isoformat(),
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None
+        }
+
+class RoleHierarchy(db.Model):
+    """Hierarquia de roles para herança de permissões"""
+    __tablename__ = 'role_hierarchy'
+
+    id = db.Column(db.Integer, primary_key=True)
+    parent_role = db.Column(db.String(50), nullable=False)  # Role pai
+    child_role = db.Column(db.String(50), nullable=False)   # Role filho
+    inheritance_type = db.Column(db.String(20), default='full')  # full, partial, conditional
+    inheritance_conditions = db.Column(db.JSON)  # Condições para herança
+
+    # Controle
+    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    created_by_user = db.relationship('User', foreign_keys=[created_by])
+
+    __table_args__ = (
+        db.Index('idx_role_hierarchy_parent', 'parent_role'),
+        db.Index('idx_role_hierarchy_child', 'child_role'),
+        db.UniqueConstraint('parent_role', 'child_role', name='unique_role_hierarchy'),
+    )
+
+class TeamPermission(db.Model):
+    """Permissões específicas de equipes"""
+    __tablename__ = 'team_permissions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
+    resource_type = db.Column(db.String(50), nullable=False)
+    resource_id = db.Column(db.Integer)  # ID específico do recurso (opcional)
+    action = db.Column(db.String(50), nullable=False)
+    permission_level = db.Column(db.Integer, default=1)
+
+    # Controle de acesso
+    granted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Relacionamentos
+    team = db.relationship('Team', backref='permissions')
+    granted_by_user = db.relationship('User', foreign_keys=[granted_by])
+
+    __table_args__ = (
+        db.Index('idx_team_permissions_team', 'team_id'),
+        db.Index('idx_team_permissions_resource', 'resource_type', 'resource_id'),
+        db.Index('idx_team_permissions_active', 'is_active'),
+    )
+
+class TemporaryAccess(db.Model):
+    """Acesso temporário a recursos específicos"""
+    __tablename__ = 'temporary_access'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    resource_type = db.Column(db.String(50), nullable=False)
+    resource_id = db.Column(db.Integer, nullable=False)
+    action = db.Column(db.String(50), nullable=False)
+
+    # Controle temporal
+    granted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    access_reason = db.Column(db.Text)
+
+    # Controle de uso
+    is_active = db.Column(db.Boolean, default=True)
+    first_used_at = db.Column(db.DateTime)
+    last_used_at = db.Column(db.DateTime)
+    usage_count = db.Column(db.Integer, default=0)
+
+    # Relacionamentos
+    user = db.relationship('User', foreign_keys=[user_id])
+    granted_by_user = db.relationship('User', foreign_keys=[granted_by])
+
+    __table_args__ = (
+        db.Index('idx_temporary_access_user', 'user_id'),
+        db.Index('idx_temporary_access_resource', 'resource_type', 'resource_id'),
+        db.Index('idx_temporary_access_expires', 'expires_at'),
+        db.Index('idx_temporary_access_active', 'is_active'),
+    )
+
+    def is_expired(self):
+        """Verifica se acesso temporário expirou"""
+        return datetime.utcnow() > self.expires_at
+
+    def record_usage(self):
+        """Registra uso do acesso temporário"""
+        now = datetime.utcnow()
+        if not self.first_used_at:
+            self.first_used_at = now
+        self.last_used_at = now
+        self.usage_count += 1
+
+class AccessAudit(db.Model):
+    """Auditoria detalhada de acessos ao sistema"""
+    __tablename__ = 'access_audit'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    session_id = db.Column(db.String(100))
+
+    # Detalhes do acesso
+    resource_type = db.Column(db.String(50), nullable=False)
+    resource_id = db.Column(db.Integer)
+    action = db.Column(db.String(50), nullable=False)
+    permission_used = db.Column(db.String(100))
+
+    # Contexto
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.Text)
+    referer = db.Column(db.String(500))
+    method = db.Column(db.String(10))  # GET, POST, etc.
+
+    # Resultado
+    access_granted = db.Column(db.Boolean, nullable=False)
+    response_time_ms = db.Column(db.Integer)
+    error_message = db.Column(db.Text)
+
+    # Relacionamentos
+    accessed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref='access_logs')
+
+    __table_args__ = (
+        db.Index('idx_access_audit_user', 'user_id'),
+        db.Index('idx_access_audit_resource', 'resource_type', 'resource_id'),
+        db.Index('idx_access_audit_timestamp', 'accessed_at'),
+        db.Index('idx_access_audit_granted', 'access_granted'),
+    )
+
 class CAPA(db.Model):
     """Plano de Ação Corretiva e Preventiva (CAPA)"""
     __tablename__ = 'capa'
 
     id = db.Column(db.Integer, primary_key=True)
     non_conformity_id = db.Column(db.Integer, db.ForeignKey('non_conformities.id'), nullable=False)
+
+    __table_args__ = (
+        db.Index('idx_capa_status', 'status'),
+        db.Index('idx_capa_type', 'capa_type'),
+        db.Index('idx_capa_priority', 'priority'),
+        db.Index('idx_capa_non_conformity', 'non_conformity_id'),
+        db.Index('idx_capa_responsible', 'responsible_id'),
+        db.Index('idx_capa_target_completion', 'target_completion_date'),
+        db.Index('idx_capa_created_by', 'created_by_id'),
+    )
 
     # Tipo e identificação
     capa_type = db.Column(db.Enum(CAPAType), nullable=False)

@@ -224,6 +224,31 @@
                     <button type="button" onclick="printDocument()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                         <i class="fas fa-print mr-1"></i> Imprimir
                     </button>
+
+                    <!-- Dropdown de Download PDF -->
+                    <div class="relative" id="pdf-dropdown">
+                        <button type="button" onclick="togglePdfDropdown()"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-download mr-1"></i> PDF
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+
+                        <div id="pdf-dropdown-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden">
+                            <div class="py-1">
+                                <a href="{{ url_for('documents.download_pdf', id=document.id, orientation='portrait') }}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF (Retrato)
+                                </a>
+                                <a href="{{ url_for('documents.download_pdf', id=document.id, orientation='landscape') }}"
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-file-pdf mr-2"></i>Download PDF (Paisagem)
+                                </a>
+                                <button onclick="printDocument()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-print mr-2"></i>Visualizar Impressão
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -286,7 +311,7 @@ document.getElementById('confirm-read-btn')?.addEventListener('click', function(
 function printDocument() {
     const printWindow = window.open('', '_blank');
     const content = document.getElementById('document-content').innerHTML;
-    
+
     printWindow.document.write(`
         <html>
         <head>
@@ -308,11 +333,27 @@ function printDocument() {
         </body>
         </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
     printWindow.close();
 }
+
+// Toggle PDF dropdown
+function togglePdfDropdown() {
+    const dropdown = document.getElementById('pdf-dropdown-menu');
+    dropdown.classList.toggle('hidden');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('pdf-dropdown');
+    const menu = document.getElementById('pdf-dropdown-menu');
+
+    if (!dropdown.contains(event.target)) {
+        menu.classList.add('hidden');
+    }
+});
 </script>
 {% endblock %}

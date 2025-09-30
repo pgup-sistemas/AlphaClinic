@@ -69,7 +69,10 @@ class AuditService:
 
         except Exception as e:
             # Em caso de erro na auditoria, logar mas não falhar a operação
-            current_app.logger.error(f"Failed to create audit log: {str(e)}")
+            try:
+                current_app.logger.error(f"Failed to create audit log: {str(e)}")
+            except:
+                print(f"Failed to create audit log: {str(e)}")
             # Em produção, poderia enviar alerta para equipe de compliance
 
     @staticmethod

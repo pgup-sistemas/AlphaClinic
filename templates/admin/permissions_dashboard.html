@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Administração - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen">
+    <div class="px-4 py-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg p-8 text-white mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">
+                        <i class="fas fa-cog mr-3"></i>
+                        Administração Avançada
+                    </h1>
+                    <p class="text-xl opacity-90">
+                        Gestão completa de permissões e controle de acesso
+                    </p>
+                </div>
+                <div class="hidden md:block">
+                    <i class="fas fa-shield-alt text-6xl opacity-20"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-key text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ stats.total_permissions }}</h3>
+                        <p class="text-gray-600 text-sm">Permissões Ativas</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-users text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ stats.total_team_permissions }}</h3>
+                        <p class="text-gray-600 text-sm">Permissões de Equipe</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-orange-100 p-3 rounded-full">
+                        <i class="fas fa-clock text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ stats.total_temporary_access }}</h3>
+                        <p class="text-gray-600 text-sm">Acessos Temporários</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fas fa-history text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ stats.recent_access_audits }}</h3>
+                        <p class="text-gray-600 text-sm">Auditorias (24h)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
+            <!-- Permissions Management -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-key mr-2 text-blue-600"></i>
+                    Gestão de Permissões
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Gerencie permissões granulares por role, equipe e recursos específicos.
+                </p>
+                <div class="space-y-3">
+                    <a href="{{ url_for('admin.manage_permissions') }}"
+                       class="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Criar Nova Permissão
+                    </a>
+                    <a href="{{ url_for('admin.manage_team_permissions') }}"
+                       class="block w-full bg-green-600 text-white text-center py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-users mr-2"></i>
+                        Permissões de Equipe
+                    </a>
+                </div>
+            </div>
+
+            <!-- Temporary Access -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-clock mr-2 text-orange-600"></i>
+                    Acessos Temporários
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Conceda acessos temporários a recursos específicos por tempo limitado.
+                </p>
+                <div class="space-y-3">
+                    <a href="{{ url_for('admin.manage_temporary_access') }}"
+                       class="block w-full bg-orange-600 text-white text-center py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Conceder Acesso Temporário
+                    </a>
+                    <a href="{{ url_for('admin.access_audit') }}"
+                       class="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-history mr-2"></i>
+                        Auditoria de Acessos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- Recent Permissions -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-clock mr-2 text-blue-600"></i>
+                    Permissões Recentes
+                </h3>
+                {% if recent_permissions %}
+                <div class="space-y-3">
+                    {% for permission in recent_permissions %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">{{ permission.name }}</div>
+                            <div class="text-sm text-gray-600">{{ permission.role }} → {{ permission.resource_type }}.{{ permission.action }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">{{ permission.granted_at.strftime('%d/%m %H:%M') }}</div>
+                            <div class="text-xs text-gray-400">Nível {{ permission.permission_level }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-4">Nenhuma permissão recente</p>
+                {% endif %}
+            </div>
+
+            <!-- Active Temporary Access -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-clock mr-2 text-orange-600"></i>
+                    Acessos Temporários Ativos
+                </h3>
+                {% if active_temp_access %}
+                <div class="space-y-3">
+                    {% for access in active_temp_access %}
+                    <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">{{ access.user.full_name }}</div>
+                            <div class="text-sm text-gray-600">{{ access.resource_type }} → {{ access.action }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Expira: {{ access.expires_at.strftime('%d/%m %H:%M') }}</div>
+                            <div class="text-xs text-gray-400">{{ access.usage_count }} usos</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-4">Nenhum acesso temporário ativo</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-bar mr-2 text-purple-600"></i>
+                Relatórios de Permissões
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{{ url_for('admin.permission_reports') }}"
+                   class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-chart-pie text-purple-600 text-xl mr-3"></i>
+                    <div>
+                        <div class="font-medium text-purple-800">Relatórios Gerais</div>
+                        <div class="text-sm text-purple-600">Estatísticas e análises</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('admin.access_audit') }}"
+                   class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <i class="fas fa-history text-green-600 text-xl mr-3"></i>
+                    <div>
+                        <div class="font-medium text-green-800">Auditoria de Acessos</div>
+                        <div class="text-sm text-green-600">Logs detalhados de acesso</div>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('admin.permissions_dashboard') }}"
+                   class="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                    <i class="fas fa-tachometer-alt text-blue-600 text-xl mr-3"></i>
+                    <div>
+                        <div class="font-medium text-blue-800">Dashboard de Permissões</div>
+                        <div class="text-sm text-blue-600">Visão geral do sistema</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                Sistema de Permissões Avançado
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Funcionalidades Implementadas:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• ✅ Controle de acesso baseado em roles (RBAC)</li>
+                        <li>• ✅ Permissões granulares por recurso/ação</li>
+                        <li>• ✅ Controle de acesso baseado em equipes</li>
+                        <li>• ✅ Acessos temporários com expiração automática</li>
+                        <li>• ✅ Auditoria completa de todas as verificações</li>
+                        <li>• ✅ Interface administrativa para gestão</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Recursos Disponíveis:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• 👥 {{"%d usuários ativos"|format(stats.active_users) }}</li>
+                        <li>• 🏢 {{"%d equipes"|format(stats.total_teams) }}</li>
+                        <li>• 🔑 {{"%d permissões ativas"|format(stats.total_permissions) }}</li>
+                        <li>• ⏰ {{"%d acessos temporários"|format(stats.total_temporary_access) }}</li>
+                        <li>• 📊 Sistema de auditoria em tempo real</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

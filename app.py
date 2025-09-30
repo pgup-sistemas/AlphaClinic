@@ -113,7 +113,8 @@ def seed_admin_user():
     from models import (
         User, UserRole, CIPAMeeting, ImprovementCycle, Notification,
         OperationalEvent, ImprovementStatus, NotificationType, Team,
-        Audit, NonConformity, CAPA, CAPAStatus, CAPAType, AuditType, Norm
+        Audit, NonConformity, CAPA, CAPAStatus, CAPAType, AuditType, Norm,
+        Document, DocumentStatus, ElectronicSignature, SignatureType, db
     )
     from datetime import datetime, timedelta
 
@@ -405,6 +406,7 @@ def seed_admin_user():
                 signed_at=datetime.utcnow()
             )
             content_to_sign = f"{sample_document.title}{sample_document.content}{sample_document.version}{admin.id}{datetime.utcnow().isoformat()}"
+            approval_signature.signature_hash = approval_signature.generate_signature_hash(content_to_sign)
             approval_signature.signature_data = approval_signature.generate_signature_hash(content_to_sign)
             db.session.add(approval_signature)
 
@@ -423,6 +425,7 @@ def seed_admin_user():
                 },
                 signed_at=datetime.utcnow()
             )
+            reading_signature.signature_hash = reading_signature.generate_signature_hash(content_to_sign)
             reading_signature.signature_data = reading_signature.generate_signature_hash(content_to_sign)
             db.session.add(reading_signature)
 
@@ -518,7 +521,15 @@ def create_app():
     # Relatórios de Compliance
     from blueprints.compliance import compliance_bp
     app.register_blueprint(compliance_bp, url_prefix='/compliance')
-    
+
+    # APIs RESTful
+    from blueprints.api import api_bp
+    app.register_blueprint(api_bp)
+
+    # Administração avançada
+    from blueprints.admin import admin_bp
+    app.register_blueprint(admin_bp)
+
     return app
 
 if __name__ == '__main__':

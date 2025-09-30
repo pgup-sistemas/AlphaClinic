@@ -1,12 +1,100 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app, send_file, Response
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from models import Document, DocumentFolder, DocumentVersion, DocumentAttachment, DocumentRead, DocumentStatus, Norm, ElectronicSignature, SignatureType, db
 from audit_service import AuditService
 import os
 from datetime import datetime
+import io
+from reportlab.lib.pagesizes import letter, A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
 
 documents_bp = Blueprint('documents', __name__)
+
+# ==================== FUNÇÕES AUXILIARES DE PERMISSÃO ====================
+
+def can_user_view_document(user, document):
+    """Verifica se usuário pode visualizar documento"""
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    # 1. Verificar permissões específicas do banco de dados primeiro
+    has_permission, _, _, source = PermissionService.check_permission(
+        user, ResourceType.DOCUMENT, PermissionAction.READ,
+        resource_owner_id=document.created_by_id, resource_id=document.id
+    )
+
+    if has_permission:
+        return True
+
+    # 2. Fallback para regras padrão (apenas se não houver configuração específica)
+    # Admin e Manager podem ver todos
+    if user.role.value in ['admin', 'manager']:
+        return True
+
+    # Criador pode ver seu documento
+    if document.created_by_id == user.id:
+        return True
+
+    # Auditor pode ver documentos de auditorias designadas
+    if user.role.value == 'auditor' and document.audit:
+        if document.audit.assigned_auditor_id == user.id:
+            return True
+
+    # Revisor pode ver documentos designados para revisão
+    if user.role.value == 'reviewer' and document.reviewed_by_id == user.id:
+        return True
+
+    # Usuário pode ver documentos publicados (exceto se for restrito)
+    if document.status.value == 'published':
+        return True
+
+    return False
+
+def can_user_create_document(user):
+    """Verifica se usuário pode criar documentos"""
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    # 1. Verificar permissões específicas do banco de dados primeiro
+    has_permission, _, _, source = PermissionService.check_permission(
+        user, ResourceType.DOCUMENT, PermissionAction.CREATE
+    )
+
+    if has_permission:
+        return True
+
+    # 2. Fallback para regras padrão
+    return user.role.value in ['admin', 'manager', 'user']
+
+def get_user_accessible_documents(user):
+    """Obtém documentos que usuário pode acessar"""
+    if user.role.value in ['admin', 'manager']:
+        # Admin e Manager veem todos
+        return Document.query
+
+    elif user.role.value == 'auditor':
+        # Auditor vê: próprios + designados para auditoria
+        return Document.query.filter(
+            db.or_(
+                Document.created_by_id == user.id,
+                Document.audit.has(assigned_auditor_id=user.id)
+            )
+        )
+
+    elif user.role.value == 'reviewer':
+        # Revisor vê: próprios + designados para revisão
+        return Document.query.filter(
+            db.or_(
+                Document.created_by_id == user.id,
+                Document.reviewed_by_id == user.id
+            )
+        )
+
+    else:  # user
+        # Usuário vê apenas seus próprios documentos
+        return Document.query.filter_by(created_by_id=user.id)
 
 @documents_bp.route('/')
 @login_required
@@ -16,14 +104,27 @@ def index():
     folder_id = request.args.get('folder')
     search = request.args.get('search')
     
-    query = Document.query
-    
+    # ✅ CONTROLE DE PERMISSÃO FLEXÍVEL: Usar sistema de permissões do banco
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    # Verificar se usuário tem permissão geral para listar documentos
+    has_list_permission, _, _, source = PermissionService.check_permission(
+        current_user, ResourceType.DOCUMENT, PermissionAction.READ
+    )
+
+    if has_list_permission:
+        # Se tem permissão geral, mostrar todos os documentos
+        query = Document.query
+    else:
+        # Caso contrário, usar filtros específicos
+        query = get_user_accessible_documents(current_user)
+
     if status_filter:
         query = query.filter_by(status=DocumentStatus(status_filter))
-    
+
     if folder_id:
         query = query.filter_by(folder_id=folder_id)
-    
+
     if search:
         query = query.filter(Document.title.contains(search))
     
@@ -39,6 +140,19 @@ def index():
 @login_required
 def create():
     """Criar novo documento - coração do sistema"""
+
+    # ✅ CONTROLE DE PERMISSÃO FLEXÍVEL: Verificar permissões do banco primeiro
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    has_permission, _, _, source = PermissionService.check_permission(
+        current_user, ResourceType.DOCUMENT, PermissionAction.CREATE
+    )
+
+    if not has_permission:
+        # Fallback para regras padrão se não houver configuração específica
+        if not can_user_create_document(current_user):
+            flash('Sem permissão para criar documentos.', 'error')
+            return redirect(url_for('main.dashboard'))
     if request.method == 'POST':
         title = request.form['title']
         content = request.form.get('content', '')  # Rich text from editor
@@ -99,6 +213,20 @@ def create():
 def view(id):
     """Visualizar documento"""
     document = Document.query.get_or_404(id)
+
+    # ✅ CONTROLE DE PERMISSÃO FLEXÍVEL: Verificar permissões do banco primeiro
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    has_permission, _, _, source = PermissionService.check_permission(
+        current_user, ResourceType.DOCUMENT, PermissionAction.READ,
+        resource_owner_id=document.created_by_id, resource_id=document.id
+    )
+
+    if not has_permission:
+        # Fallback para regras padrão se não houver configuração específica
+        if not can_user_view_document(current_user, document):
+            flash('Sem permissão para visualizar este documento.', 'error')
+            return redirect(url_for('main.dashboard'))
     
     # Record document read
     read_record = DocumentRead.query.filter_by(
@@ -122,10 +250,43 @@ def edit(id):
     """Editor completo de documentos - CORAÇÃO DO SISTEMA"""
     document = Document.query.get_or_404(id)
     
-    # Check permissions
-    if document.created_by_id != current_user.id and current_user.role.value not in ['admin', 'manager']:
-        flash('Sem permissão para editar este documento.', 'error')
-        return redirect(url_for('documents.view', id=id))
+    # ✅ CONTROLE DE PERMISSÃO FLEXÍVEL: Verificar permissões do banco primeiro
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    has_permission, _, _, source = PermissionService.check_permission(
+        current_user, ResourceType.DOCUMENT, PermissionAction.UPDATE,
+        resource_owner_id=document.created_by_id, resource_id=document.id
+    )
+
+    if not has_permission:
+        # Fallback para regras padrão se não houver configuração específica
+        can_edit = False
+
+        # 1. Criador sempre pode editar seu documento
+        if document.created_by_id == current_user.id:
+            can_edit = True
+
+        # 2. Admin pode editar qualquer documento
+        elif current_user.role.value == 'admin':
+            can_edit = True
+
+        # 3. Manager pode editar documentos publicados ou em revisão
+        elif current_user.role.value == 'manager':
+            if document.status.value in ['published', 'review']:
+                can_edit = True
+
+        # 4. Auditor pode editar documentos de auditorias designadas
+        elif current_user.role.value == 'auditor' and document.audit:
+            if document.audit.assigned_auditor_id == current_user.id:
+                can_edit = True
+
+        # 5. Revisor pode editar documentos designados para revisão
+        elif current_user.role.value == 'reviewer' and document.reviewed_by_id == current_user.id:
+            can_edit = True
+
+        if not can_edit:
+            flash('Sem permissão para editar este documento.', 'error')
+            return redirect(url_for('documents.view', id=id))
     
     if request.method == 'POST':
         # Update document
@@ -183,7 +344,14 @@ def workflow_action(id, action):
     """Gerenciar workflow do documento: redação → revisão → publicação → leitura"""
     document = Document.query.get_or_404(id)
     
+    # ✅ CONTROLE DE PERMISSÃO AVANÇADO: Verificar ações baseadas no role
+
     if action == 'submit_for_review':
+        # Apenas criador pode enviar para revisão
+        if document.created_by_id != current_user.id:
+            flash('Apenas o criador pode enviar documento para revisão.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
         if document.status == DocumentStatus.DRAFT:
             document.status = DocumentStatus.REVIEW
             reviewer_id = request.form.get('reviewer_id')
@@ -191,21 +359,36 @@ def workflow_action(id, action):
                 document.reviewed_by_id = reviewer_id
             document.review_deadline = datetime.strptime(request.form['review_deadline'], '%Y-%m-%d').date() if request.form.get('review_deadline') else None
             flash('Documento enviado para revisão!', 'success')
-        
+
     elif action == 'approve':
-        if document.status == DocumentStatus.REVIEW and current_user.id == document.reviewed_by_id:
+        # Apenas revisor designado pode aprovar
+        if document.reviewed_by_id != current_user.id:
+            flash('Apenas o revisor designado pode aprovar este documento.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+        if document.status == DocumentStatus.REVIEW:
             document.status = DocumentStatus.PUBLISHED
             document.published_by_id = current_user.id
             document.published_at = datetime.utcnow()
             flash('Documento aprovado e publicado!', 'success')
-    
+
     elif action == 'reject':
-        if document.status == DocumentStatus.REVIEW and current_user.id == document.reviewed_by_id:
+        # Apenas revisor designado pode rejeitar
+        if document.reviewed_by_id != current_user.id:
+            flash('Apenas o revisor designado pode rejeitar este documento.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+        if document.status == DocumentStatus.REVIEW:
             document.status = DocumentStatus.DRAFT
             rejection_reason = request.form.get('rejection_reason', '')
             flash(f'Documento rejeitado. Motivo: {rejection_reason}', 'warning')
-    
+
     elif action == 'archive':
+        # Apenas admin e manager podem arquivar
+        if current_user.role.value not in ['admin', 'manager']:
+            flash('Apenas administradores e gerentes podem arquivar documentos.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
         document.status = DocumentStatus.ARCHIVED
         flash('Documento arquivado.', 'info')
     
@@ -216,17 +399,31 @@ def workflow_action(id, action):
 @login_required
 def confirm_read(id):
     """Confirmar leitura do documento"""
+    document = Document.query.get_or_404(id)
+
+    # ✅ CONTROLE DE PERMISSÃO: Apenas documentos publicados podem ter leitura confirmada
+    if document.status != DocumentStatus.PUBLISHED:
+        flash('Apenas documentos publicados podem ter leitura confirmada.', 'error')
+        return redirect(url_for('documents.view', id=id))
+
+    # ✅ CONTROLE DE PERMISSÃO: Usuários não podem confirmar leitura de seus próprios documentos
+    if document.created_by_id == current_user.id:
+        flash('Criadores não precisam confirmar leitura de seus próprios documentos.', 'warning')
+        return redirect(url_for('documents.view', id=id))
+
     read_record = DocumentRead.query.filter_by(
         document_id=id,
         user_id=current_user.id
     ).first()
-    
+
     if read_record:
         read_record.confirmed = True
         read_record.confirmation_date = datetime.utcnow()
         db.session.commit()
         flash('Leitura confirmada!', 'success')
-    
+    else:
+        flash('Registro de leitura não encontrado.', 'error')
+
     return redirect(url_for('documents.view', id=id))
 
 @documents_bp.route('/<int:id>/upload-attachment', methods=['POST'])
@@ -234,6 +431,31 @@ def confirm_read(id):
 def upload_attachment(id):
     """Upload de anexos para documentos"""
     document = Document.query.get_or_404(id)
+
+    # ✅ CONTROLE DE PERMISSÃO: Verificar se usuário pode fazer upload de anexos
+    can_upload = False
+
+    # 1. Criador sempre pode fazer upload
+    if document.created_by_id == current_user.id:
+        can_upload = True
+
+    # 2. Admin pode fazer upload em qualquer documento
+    elif current_user.role.value == 'admin':
+        can_upload = True
+
+    # 3. Manager pode fazer upload em documentos publicados ou em revisão
+    elif current_user.role.value == 'manager':
+        if document.status.value in ['published', 'review']:
+            can_upload = True
+
+    # 4. Auditor pode fazer upload em documentos de auditorias designadas
+    elif current_user.role.value == 'auditor' and document.audit:
+        if document.audit.assigned_auditor_id == current_user.id:
+            can_upload = True
+
+    if not can_upload:
+        flash('Sem permissão para fazer upload de anexos neste documento.', 'error')
+        return redirect(url_for('documents.edit', id=id))
     
     if 'file' not in request.files:
         flash('Nenhum arquivo selecionado.', 'error')
@@ -323,18 +545,46 @@ def sign_document(id, signature_type):
         flash('Tipo de assinatura inválido.', 'error')
         return redirect(url_for('documents.view', id=id))
 
-    # Check permissions based on signature type
-    if sig_type == SignatureType.APPROVAL and document.status != DocumentStatus.REVIEW:
-        flash('Documento deve estar em revisão para aprovação.', 'error')
-        return redirect(url_for('documents.view', id=id))
+    # ✅ CONTROLE DE PERMISSÃO AVANÇADO: Verificar se usuário pode assinar baseado no tipo e role
 
-    if sig_type == SignatureType.REVIEW and document.status != DocumentStatus.REVIEW:
-        flash('Documento deve estar em revisão para ser revisado.', 'error')
-        return redirect(url_for('documents.view', id=id))
+    # 1. Verificação de aprovação
+    if sig_type == SignatureType.APPROVAL:
+        if document.status != DocumentStatus.REVIEW:
+            flash('Documento deve estar em revisão para aprovação.', 'error')
+            return redirect(url_for('documents.view', id=id))
 
-    if sig_type == SignatureType.PUBLICATION and document.status != DocumentStatus.REVIEW:
-        flash('Documento deve estar em revisão para publicação.', 'error')
-        return redirect(url_for('documents.view', id=id))
+        # Apenas admin, manager ou revisor designado podem aprovar
+        if not (current_user.role.value in ['admin', 'manager'] or document.reviewed_by_id == current_user.id):
+            flash('Sem permissão para aprovar este documento.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+    # 2. Verificação de revisão
+    elif sig_type == SignatureType.REVIEW:
+        if document.status != DocumentStatus.REVIEW:
+            flash('Documento deve estar em revisão para ser revisado.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+        # Apenas o revisor designado pode revisar
+        if document.reviewed_by_id != current_user.id:
+            flash('Apenas o revisor designado pode revisar este documento.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+    # 3. Verificação de publicação
+    elif sig_type == SignatureType.PUBLICATION:
+        if document.status != DocumentStatus.REVIEW:
+            flash('Documento deve estar em revisão para publicação.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+        # Apenas admin e manager podem publicar
+        if current_user.role.value not in ['admin', 'manager']:
+            flash('Apenas administradores e gerentes podem publicar documentos.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+    # 4. Verificação de leitura (todos podem confirmar leitura de documentos publicados)
+    elif sig_type == SignatureType.READING:
+        if document.status != DocumentStatus.PUBLISHED:
+            flash('Documento deve estar publicado para confirmação de leitura.', 'error')
+            return redirect(url_for('documents.view', id=id))
 
     # Check if user already signed this type
     existing_signature = ElectronicSignature.query.filter_by(
@@ -440,6 +690,11 @@ def document_signatures(id):
     """Ver histórico de assinaturas do documento"""
     document = Document.query.get_or_404(id)
 
+    # ✅ CONTROLE DE PERMISSÃO: Verificar se usuário pode ver assinaturas
+    if not can_user_view_document(current_user, document):
+        flash('Sem permissão para visualizar assinaturas deste documento.', 'error')
+        return redirect(url_for('main.dashboard'))
+
     signatures = ElectronicSignature.query.filter_by(document_id=id).order_by(
         ElectronicSignature.signed_at.desc()
     ).all()
@@ -451,6 +706,11 @@ def document_signatures(id):
 def verify_signatures(id):
     """Verificar validade das assinaturas do documento"""
     document = Document.query.get_or_404(id)
+
+    # ✅ CONTROLE DE PERMISSÃO: Apenas admin, manager e auditor podem verificar assinaturas
+    if current_user.role.value not in ['admin', 'manager', 'auditor']:
+        flash('Sem permissão para verificar assinaturas.', 'error')
+        return redirect(url_for('documents.view', id=id))
 
     signatures = ElectronicSignature.query.filter_by(document_id=id).all()
     verification_results = []
@@ -474,8 +734,184 @@ def verify_signatures(id):
 @login_required
 def signatures_api(id):
     """API para obter assinaturas de um documento"""
+    document = Document.query.get_or_404(id)
+
+    # ✅ CONTROLE DE PERMISSÃO: Apenas admin, manager e auditor podem acessar API de assinaturas
+    if current_user.role.value not in ['admin', 'manager', 'auditor']:
+        return jsonify({'error': 'Sem permissão para acessar assinaturas'}), 403
+
     signatures = ElectronicSignature.query.filter_by(document_id=id).order_by(
         ElectronicSignature.signed_at.desc()
     ).all()
 
     return jsonify([sig.to_dict() for sig in signatures])
+
+# ==================== PDF GENERATION ====================
+
+@documents_bp.route('/<int:id>/download-pdf')
+@login_required
+def download_pdf(id):
+    """Gerar e baixar documento em PDF com opção de orientação"""
+    document = Document.query.get_or_404(id)
+
+    # ✅ CONTROLE DE PERMISSÃO FLEXÍVEL: Verificar permissões do banco primeiro
+    from permission_service import PermissionService, ResourceType, PermissionAction
+
+    has_permission, _, _, source = PermissionService.check_permission(
+        current_user, ResourceType.DOCUMENT, PermissionAction.EXPORT,
+        resource_owner_id=document.created_by_id, resource_id=document.id
+    )
+
+    if not has_permission:
+        # Fallback para regras padrão se não houver configuração específica
+        if not (current_user.role.value in ['admin', 'manager'] or document.created_by_id == current_user.id):
+            flash('Sem permissão para baixar este documento.', 'error')
+            return redirect(url_for('documents.view', id=id))
+
+    # Obter parâmetros de orientação
+    orientation = request.args.get('orientation', 'portrait')  # portrait ou landscape
+
+    try:
+        # Criar PDF em memória
+        buffer = io.BytesIO()
+
+        # Configurar tamanho da página baseado na orientação
+        if orientation == 'landscape':
+            pagesize = landscape(A4)
+        else:
+            pagesize = A4
+
+        doc = SimpleDocTemplate(buffer, pagesize=pagesize)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Estilo personalizado para o título
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            spaceAfter=20,
+            textColor=colors.darkblue
+        )
+
+        # Estilo para subtítulos
+        subtitle_style = ParagraphStyle(
+            'CustomSubtitle',
+            parent=styles['Normal'],
+            fontSize=12,
+            textColor=colors.gray,
+            spaceAfter=10
+        )
+
+        # Título do documento
+        story.append(Paragraph(f"<b>{document.title}</b>", title_style))
+        story.append(Spacer(1, 0.2 * inch))
+
+        # Informações do documento
+        doc_info = [
+            ['Código:', document.code or 'N/A'],
+            ['Versão:', document.version or '1.0'],
+            ['Categoria:', document.category or 'N/A'],
+            ['Status:', document.status.value.title() if document.status else 'N/A'],
+            ['Data de Criação:', document.created_at.strftime('%d/%m/%Y %H:%M') if document.created_at else 'N/A'],
+            ['Publicado em:', document.published_at.strftime('%d/%m/%Y %H:%M') if document.published_at else 'N/A']
+        ]
+
+        if document.creator:
+            doc_info.append(['Criado por:', document.creator.full_name])
+
+        if document.publisher:
+            doc_info.append(['Publicado por:', document.publisher.full_name])
+
+        # Tabela de informações
+        info_table = Table(doc_info, colWidths=[1.5*inch, 3.5*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+
+        story.append(info_table)
+        story.append(Spacer(1, 0.3 * inch))
+
+        # Conteúdo do documento
+        if document.content:
+            # Estilo para o conteúdo
+            content_style = ParagraphStyle(
+                'DocumentContent',
+                parent=styles['Normal'],
+                fontSize=11,
+                spaceAfter=12,
+                leading=14
+            )
+
+            # Processar conteúdo HTML básico para texto
+            content_text = document.content
+            # Remover tags HTML básicas
+            import re
+            content_text = re.sub(r'<[^>]+>', '', content_text)
+            content_text = content_text.replace('&nbsp;', ' ')
+            content_text = content_text.replace('&', '&')
+            content_text = content_text.replace('<', '<')
+            content_text = content_text.replace('>', '>')
+
+            story.append(Paragraph("<b>CONTEÚDO DO DOCUMENTO:</b>", styles['Heading2']))
+            story.append(Spacer(1, 0.2 * inch))
+
+            # Dividir conteúdo em parágrafos
+            paragraphs = content_text.split('\n\n')
+            for para in paragraphs:
+                if para.strip():
+                    story.append(Paragraph(para.strip(), content_style))
+                    story.append(Spacer(1, 0.1 * inch))
+
+        # Rodapé com informações de geração
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.gray,
+            alignment=1  # Center alignment
+        )
+
+        story.append(Spacer(1, 0.5 * inch))
+        story.append(Paragraph(
+            f"Documento gerado pelo Alphaclin QMS em {datetime.utcnow().strftime('%d/%m/%Y às %H:%M')} - Orientação: {orientation.title()}",
+            footer_style
+        ))
+
+        # Gerar PDF
+        doc.build(story)
+
+        buffer.seek(0)
+
+        # Log da geração do PDF
+        AuditService.log_document_operation(
+            document,
+            'pdf_export',
+            details={
+                'orientation': orientation,
+                'generated_by': current_user.full_name,
+                'file_size': len(buffer.getvalue())
+            }
+        )
+
+        # Retornar PDF como download
+        filename = f"{document.code or 'documento'}_{document.version or '1.0'}.pdf"
+
+        return Response(
+            buffer.getvalue(),
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Cache-Control': 'no-cache'
+            }
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Erro ao gerar PDF do documento {id}: {str(e)}")
+        flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+        return redirect(url_for('documents.view', id=id))

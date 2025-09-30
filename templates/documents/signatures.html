@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}Assinaturas do Documento - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Assinaturas do Documento</h1>
+                <p class="text-gray-600 mt-2">{{ document.title }} - {{ document.code }}</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="{{ url_for('documents.view', id=document.id) }}"
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                    ← Voltar ao Documento
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Info -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <h3 class="font-semibold text-gray-800">Informações do Documento</h3>
+                <div class="mt-2 space-y-2">
+                    <p><span class="font-medium">Título:</span> {{ document.title }}</p>
+                    <p><span class="font-medium">Código:</span> {{ document.code }}</p>
+                    <p><span class="font-medium">Versão:</span> {{ document.version }}</p>
+                    <p><span class="font-medium">Status:</span>
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                            {% if document.status.value == 'draft' %}bg-gray-100 text-gray-800
+                            {% elif document.status.value == 'review' %}bg-yellow-100 text-yellow-800
+                            {% elif document.status.value == 'published' %}bg-green-100 text-green-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ document.status.value.title() }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-800">Workflow</h3>
+                <div class="mt-2 space-y-2">
+                    <p><span class="font-medium">Criado por:</span> {{ document.creator.full_name if document.creator else 'N/A' }}</p>
+                    <p><span class="font-medium">Publicado por:</span> {{ document.publisher.full_name if document.publisher else 'N/A' }}</p>
+                    <p><span class="font-medium">Data de Criação:</span> {{ document.created_at.strftime('%d/%m/%Y %H:%M') if document.created_at else 'N/A' }}</p>
+                    <p><span class="font-medium">Publicado em:</span> {{ document.published_at.strftime('%d/%m/%Y %H:%M') if document.published_at else 'N/A' }}</p>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-800">Assinatura</h3>
+                <div class="mt-2 space-y-2">
+                    <p><span class="font-medium">Requer Assinatura:</span>
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                            {% if document.signature_required %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ 'Sim' if document.signature_required else 'Não' }}
+                        </span>
+                    </p>
+                    <p><span class="font-medium">Total de Assinaturas:</span> {{ signatures|length }}</p>
+                    <p><span class="font-medium">Assinaturas Válidas:</span> {{ valid_signatures|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assinaturas Existentes -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Assinaturas Existentes</h2>
+
+        {% if signatures %}
+        <div class="space-y-4">
+            {% for signature in signatures %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white font-semibold text-sm">
+                                        {{ signature.user.full_name.split(' ')[0][0] }}{{ signature.user.full_name.split(' ')[-1][0] if signature.user.full_name.split(' ') | length > 1 else signature.user.full_name[0] }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ signature.user.full_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ signature.user.email }}</p>
+                                <p class="text-xs text-gray-400">{{ signature.user.role.value.title() if signature.user.role else 'N/A' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-3">
+                            <div>
+                                <span class="font-medium text-gray-700">Tipo de Assinatura:</span>
+                                <p class="text-sm text-gray-900">{{ signature.signature_type.value.title() if signature.signature_type else 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Contexto:</span>
+                                <p class="text-sm text-gray-900">{{ signature.context or 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Data da Assinatura:</span>
+                                <p class="text-sm text-gray-900">{{ signature.signed_at.strftime('%d/%m/%Y %H:%M') if signature.signed_at else 'N/A' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <span class="font-medium text-gray-700">IP da Assinatura:</span>
+                                <p class="text-sm text-gray-900">{{ signature.ip_address or 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Status da Validação:</span>
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                    {% if signature.validation_status == 'valid' %}bg-green-100 text-green-800
+                                    {% elif signature.validation_status == 'invalid' %}bg-red-100 text-red-800
+                                    {% elif signature.validation_status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ signature.validation_status.title() if signature.validation_status else 'N/A' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {% if signature.certificate_info %}
+                        <div class="mb-3">
+                            <span class="font-medium text-gray-700">Informações do Certificado:</span>
+                            <div class="mt-2 p-3 bg-gray-50 rounded-md">
+                                <p class="text-sm text-gray-900">
+                                    <strong>Emissor:</strong> {{ signature.certificate_issuer or 'N/A' }}<br>
+                                    <strong>Serial:</strong> {{ signature.certificate_serial or 'N/A' }}<br>
+                                    <strong>Válido de:</strong> {{ signature.certificate_valid_from.strftime('%d/%m/%Y') if signature.certificate_valid_from else 'N/A' }}<br>
+                                    <strong>Válido até:</strong> {{ signature.certificate_valid_until.strftime('%d/%m/%Y') if signature.certificate_valid_until else 'N/A' }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if signature.validation_message %}
+                        <div class="mb-3">
+                            <span class="font-medium text-gray-700">Mensagem de Validação:</span>
+                            <p class="text-sm text-gray-900 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400">
+                                {{ signature.validation_message }}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex-shrink-0">
+                        <div class="flex flex-col space-y-2">
+                            {% if signature.is_valid %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                Assinatura Válida
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                Assinatura Inválida
+                            </span>
+                            {% endif %}
+
+                            <button onclick="showSignatureDetails({{ signature.id }})"
+                                    class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                Ver Detalhes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <div class="text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma assinatura encontrada</h3>
+                <p class="mt-1 text-sm text-gray-500">Este documento ainda não possui assinaturas.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Ações Disponíveis -->
+    {% if document.signature_required and current_user.is_authenticated %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Ações Disponíveis</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Assinar Documento -->
+            <div class="text-center">
+                <div class="bg-blue-50 rounded-lg p-4 hover:bg-blue-100 transition-colors cursor-pointer"
+                     onclick="signDocument('approval')">
+                    <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Aprovar Documento</h3>
+                    <p class="text-sm text-gray-600 mt-1">Registrar aprovação formal</p>
+                </div>
+            </div>
+
+            <!-- Revisar Documento -->
+            <div class="text-center">
+                <div class="bg-yellow-50 rounded-lg p-4 hover:bg-yellow-100 transition-colors cursor-pointer"
+                     onclick="signDocument('review')">
+                    <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Revisar Documento</h3>
+                    <p class="text-sm text-gray-600 mt-1">Registrar revisão técnica</p>
+                </div>
+            </div>
+
+            <!-- Confirmar Leitura -->
+            <div class="text-center">
+                <div class="bg-green-50 rounded-lg p-4 hover:bg-green-100 transition-colors cursor-pointer"
+                     onclick="signDocument('reading')">
+                    <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Confirmar Leitura</h3>
+                    <p class="text-sm text-gray-600 mt-1">Confirmar que li o documento</p>
+                </div>
+            </div>
+
+            <!-- Publicar Documento -->
+            {% if current_user.role.value in ['admin', 'manager'] %}
+            <div class="text-center">
+                <div class="bg-purple-50 rounded-lg p-4 hover:bg-purple-100 transition-colors cursor-pointer"
+                     onclick="signDocument('publication')">
+                    <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900">Publicar Documento</h3>
+                    <p class="text-sm text-gray-600 mt-1">Publicar oficialmente</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Assinatura -->
+<div id="signatureModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4" id="signatureModalTitle">Assinar Documento</h3>
+
+                <form id="signatureForm" method="POST">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="signature_type" class="block text-sm font-medium text-gray-700 mb-2">
+                                Tipo de Assinatura
+                            </label>
+                            <select name="signature_type" id="signature_type" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="approval">Aprovação</option>
+                                <option value="review">Revisão</option>
+                                <option value="reading">Confirmação de Leitura</option>
+                                <option value="publication">Publicação</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="context" class="block text-sm font-medium text-gray-700 mb-2">
+                                Contexto/Observações
+                            </label>
+                            <textarea name="context" id="context" rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Adicione observações sobre a assinatura..."></textarea>
+                        </div>
+
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-800">
+                                        <strong>Atenção:</strong> Esta assinatura será registrada com sua identidade digital e não poderá ser alterada posteriormente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" onclick="closeSignatureModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">
+                            Assinar Documento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSignatureType = '';
+
+function signDocument(type) {
+    currentSignatureType = type;
+    document.getElementById('signature_type').value = type;
+    document.getElementById('signatureModalTitle').textContent =
+        type === 'approval' ? 'Aprovar Documento' :
+        type === 'review' ? 'Revisar Documento' :
+        type === 'reading' ? 'Confirmar Leitura' :
+        'Publicar Documento';
+    document.getElementById('signatureModal').classList.remove('hidden');
+}
+
+function closeSignatureModal() {
+    document.getElementById('signatureModal').classList.add('hidden');
+    document.getElementById('signatureForm').reset();
+}
+
+function showSignatureDetails(signatureId) {
+    // Em produção: implementar modal com detalhes completos da assinatura
+    alert('Detalhes da assinatura: ' + signatureId);
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+    const modal = document.getElementById('signatureModal');
+    if (event.target === modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Configurar formulário de assinatura
+document.getElementById('signatureForm').action = `/documents/{{ document.id }}/sign`;
+</script>
+{% endblock %}

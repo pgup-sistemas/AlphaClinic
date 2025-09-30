@@ -173,12 +173,17 @@
                     <span class="sidebar-text ml-3">Documentação</span>
                 </a>
 
-                {% if current_user.is_authenticated and current_user.role.value in ['admin', 'manager'] %}
+                {% if current_user.is_authenticated and current_user.role.value == 'admin' %}
                 <div class="pt-4 border-t border-gray-200">
                     <a href="{{ url_for('users.index') }}" title="Usuários"
                         class="sidebar-link {% if request.blueprint == 'users' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
                         <i class="fas fa-user-cog sidebar-icon"></i>
                         <span class="sidebar-text ml-3">Usuários</span>
+                    </a>
+                    <a href="{{ url_for('admin.permissions_dashboard') }}" title="Administração"
+                        class="sidebar-link {% if request.blueprint == 'admin' %}bg-alphaclin-light text-alphaclin-dark{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %} group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors">
+                        <i class="fas fa-cog sidebar-icon"></i>
+                        <span class="sidebar-text ml-3">Administração</span>
                     </a>
                 </div>
                 {% endif %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Permissões - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen">
+    <div class="px-4 py-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-key mr-3 text-blue-600"></i>
+                        Gerenciar Permissões
+                    </h1>
+                    <p class="text-gray-600 mt-1">
+                        Controle granular de permissões por role e recurso
+                    </p>
+                </div>
+                <a href="{{ url_for('admin.permissions_dashboard') }}"
+                   class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Create Permission Form -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-plus mr-2 text-green-600"></i>
+                Criar Nova Permissão
+            </h2>
+
+            <form method="POST" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Permissão</label>
+                    <input type="text" name="name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Ex: Gerenciar Documentos">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <select name="role" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Selecione o role</option>
+                        {% for role in roles %}
+                        <option value="{{ role }}">{{ role|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Recurso</label>
+                    <select name="resource_type" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Selecione o recurso</option>
+                        {% for resource in resources %}
+                        <option value="{{ resource }}">{{ resource|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ação</label>
+                    <select name="action" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Selecione a ação</option>
+                        {% for action in actions %}
+                        <option value="{{ action }}">{{ action|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nível de Permissão</label>
+                    <select name="permission_level" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        {% for level in levels %}
+                        <option value="{{ level }}">{{ level }} - {% if level == 1 %}Leitura{% elif level == 2 %}Escrita{% elif level == 3 %}Exclusão{% else %}Admin{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex items-end">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_temporary" id="is_temporary"
+                               class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="is_temporary" class="text-sm font-medium text-gray-700">Temporária</label>
+                    </div>
+                </div>
+
+                <div id="temporary_options" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duração (horas)</label>
+                    <input type="number" name="duration_hours" min="1" max="168" value="24"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div class="md:col-span-2 lg:col-span-3">
+                    <button type="submit"
+                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Criar Permissão
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Existing Permissions -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-list mr-2 text-purple-600"></i>
+                Permissões Ativas
+            </h2>
+
+            {% if permissions %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recurso.Ação</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nível</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for permission in permissions %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ permission.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ permission.role|title }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ permission.resource_type }}.{{ permission.action }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if permission.permission_level == 1 %}
+                                    <span class="text-green-600">Leitura</span>
+                                {% elif permission.permission_level == 2 %}
+                                    <span class="text-blue-600">Escrita</span>
+                                {% elif permission.permission_level == 3 %}
+                                    <span class="text-orange-600">Exclusão</span>
+                                {% else %}
+                                    <span class="text-purple-600">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if permission.is_expired() %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Expirada
+                                    </span>
+                                {% elif not permission.is_active %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Inativa
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Ativa
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {% if permission.is_active and not permission.is_expired() %}
+                                <form method="POST" action="{{ url_for('admin.revoke_permission', permission_id=permission.id) }}" class="inline">
+                                    <button type="submit"
+                                            class="text-red-600 hover:text-red-900"
+                                            onclick="return confirm('Tem certeza que deseja revogar esta permissão?')">
+                                        <i class="fas fa-times"></i>
+                                        Revogar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-key text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500">Nenhuma permissão criada ainda.</p>
+                <p class="text-sm text-gray-400 mt-1">Use o formulário acima para criar a primeira permissão.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.getElementById('is_temporary').addEventListener('change', function() {
+    const tempOptions = document.getElementById('temporary_options');
+    if (this.checked) {
+        tempOptions.classList.remove('hidden');
+    } else {
+        tempOptions.classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}
