@@ -96,10 +96,39 @@ python setup.py
 
 **Acesse:** `http://localhost:5000`
 
-## 📖 Documentação
+## 📖 Documentação Completa
 
+### 📋 Guias de Instalação
 - **[INSTALL.md](INSTALL.md)** - Guia detalhado de instalação manual
-- **[README.md](README.md)** - Funcionalidades completas
+- **[docs/installation/full-setup.md](docs/installation/full-setup.md)** - Instalação completa para produção
+- **[docs/installation/configuration.md](docs/installation/configuration.md)** - Configurações avançadas
+
+### 🚀 Guias do Usuário
+- **[docs/index.md](docs/index.md)** - Visão geral completa do sistema
+- **[docs/features/overview.md](docs/features/overview.md)** - Guia detalhado de funcionalidades
+- **[docs/api/rest-api.md](docs/api/rest-api.md)** - Documentação da API REST
+
+### 👨‍💻 Guias para Desenvolvedores
+- **[docs/development/architecture.md](docs/development/architecture.md)** - Arquitetura técnica detalhada
+- **[docs/development/database.md](docs/development/database.md)** - Modelo de dados e consultas
+- **[docs/development/security.md](docs/development/security.md)** - Implementações de segurança
+- **[docs/development/testing.md](docs/development/testing.md)** - Estratégia e execução de testes
+
+### 🔮 Funcionalidades Futuras
+- **[docs/future/roadmap.md](docs/future/roadmap.md)** - Roadmap de desenvolvimento
+- **[docs/future/features.md](docs/future/features.md)** - Funcionalidades planejadas
+- **[docs/future/mobile-api.md](docs/future/mobile-api.md)** - API mobile detalhada
+- **[docs/future/bi-analytics.md](docs/future/bi-analytics.md)** - Business Intelligence avançado
+
+### 📋 Sobre o Projeto
+- **[docs/about/overview.md](docs/about/overview.md)** - Sobre o AlphaClinic QMS
+- **[docs/about/license.md](docs/about/license.md)** - Termos de licença
+- **[docs/about/contributing.md](docs/about/contributing.md)** - Como contribuir
+
+### 🌐 Acesso à Documentação Online
+- **Documentação Principal**: `http://localhost:5000/docs/`
+- **API Documentation**: `http://localhost:5000/docs/api/`
+- **Postman Collection**: Disponível em `/docs/postman/`
 
 ## 📊 Status Atual da Implementação
 
@@ -284,6 +313,58 @@ flask process-emails
 - **Login:** admin
 - **Senha:** admin123
 
+## 📚 Como Estudar e Usar o Sistema
+
+### 🎯 Primeiros Passos
+1. **Acesse a Documentação**: `http://localhost:5000/docs/`
+2. **Explore Funcionalidades**: Navegue pelos módulos implementados
+3. **Leia Guias de Usuário**: Consulte a documentação detalhada
+4. **Teste Funcionalidades**: Experimente as ferramentas disponíveis
+
+### 📖 Documentação Disponível
+
+#### Para Usuários Iniciantes
+- **[Guia Rápido](docs/installation/quick-start.md)**: Comece aqui!
+- **[Visão Geral](docs/index.md)**: Entenda o sistema completo
+- **[Funcionalidades](docs/features/overview.md)**: Explore todas as ferramentas
+
+#### Para Usuários Avançados
+- **[APIs](docs/api/rest-api.md)**: Integre com sistemas externos
+- **[Webhooks](docs/api/webhooks.md)**: Configure notificações automáticas
+- **[Relatórios](docs/features/system/reports.md)**: Gere insights avançados
+
+#### Para Administradores
+- **[Arquitetura](docs/development/architecture.md)**: Entenda a estrutura técnica
+- **[Banco de Dados](docs/development/database.md)**: Modelo de dados detalhado
+- **[Segurança](docs/development/security.md)**: Implementações de proteção
+
+### 🔧 Recursos de Aprendizado
+
+#### Tutoriais Interativos
+- 📋 **Workflow de Documentos**: Tutorial completo passo-a-passo
+- 🔍 **Como Fazer Auditorias**: Guia prático de auditorias internas
+- ⚠️ **Gestão de NCs**: Processo completo de não conformidades
+- 📊 **Dashboards Personalizados**: Como criar relatórios customizados
+
+#### Exemplos Práticos
+- 🏥 **Cenários Hospitalares**: Casos de uso em ambiente clínico
+- 📋 **Checklists Prontos**: Templates para auditorias comuns
+- 📄 **Modelos de Documentos**: Exemplos de procedimentos
+- 📊 **KPIs Sugeridos**: Indicadores recomendados por setor
+
+### 🌐 Acesso à Documentação Online
+Após iniciar o sistema, você terá acesso completo à documentação em:
+- **📚 Documentação Principal**: `http://localhost:5000/docs/`
+- **🔌 API Documentation**: `http://localhost:5000/docs/api/`
+- **📊 Live Examples**: Exemplos funcionais no sistema
+- **🎓 Tutorials**: Tutoriais interativos disponíveis
+
+### 📞 Suporte e Ajuda
+- **💬 Chat Online**: Disponível na interface do sistema
+- **📧 Email**: suporte@alphaclin.com
+- **📋 Tickets**: Sistema de chamados integrado
+- **📚 Base de Conhecimento**: Documentação searchable
+
 ## 🗄️ Configuração do Banco de Dados
 
 ### Desenvolvimento (SQLite)
@@ -335,6 +416,155 @@ python migrate_to_postgres.py test
 - **Banco:** PostgreSQL/SQLite
 - **Autenticação:** Roles e permissões
 - **APIs:** REST para métricas
+
+## 📋 Regras e Workflows do Sistema
+
+### 🔄 Workflows Implementados
+
+#### Workflow de Documentos
+```mermaid
+graph TD
+    A[Criação] --> B[Elaboração]
+    B --> C[Revisão Técnica]
+    C --> D{Aprovado?}
+    D -->|Não| E[Revisar e Ajustar]
+    D -->|Sim| F[Revisão Normativa]
+    F --> G{Aprovado?}
+    G -->|Não| H[Revisar e Ajustar]
+    G -->|Sim| I[Aprovação Gerencial]
+    I --> J{Aprovado?}
+    J -->|Não| K[Revisar e Ajustar]
+    J -->|Sim| L[Publicação]
+    L --> M[Distribuição]
+    M --> N[Controle de Leitura]
+```
+
+**Regras do Workflow:**
+- ✅ **Prazos Definidos**: Cada etapa tem prazo configurável
+- ✅ **Aprovação Hierárquica**: Múltiplos níveis conforme criticidade
+- ✅ **Assinatura Obrigatória**: Para documentos críticos
+- ✅ **Controle de Versão**: Versionamento automático
+- ✅ **Auditoria Completa**: Todas as ações são auditadas
+
+#### Processo de Auditorias
+```mermaid
+graph TD
+    A[Planejamento] --> B[Preparação]
+    B --> C[Execução]
+    C --> D[Identificação de NCs]
+    D --> E[Relatório Preliminar]
+    E --> F[Análise de NCs]
+    F --> G[Plano de Ação]
+    G --> H[Implementação]
+    H --> I[Verificação]
+    I --> J[Relatório Final]
+```
+
+**Regras das Auditorias:**
+- ✅ **Auditor Independente**: Não pode auditar sua própria área
+- ✅ **Checklist Obrigatório**: Baseado em normas aplicáveis
+- ✅ **Evidências Documentadas**: Fotos, documentos, entrevistas
+- ✅ **Classificação de NCs**: Crítica, Major, Menor, Observação
+- ✅ **Prazos por Classificação**: 24h (crítica) a 30 dias (menor)
+
+### 👥 Sistema de Permissões
+
+#### Hierarquia de Acesso
+```javascript
+const permissionRules = {
+  "admin": {
+    "scope": "system_wide",
+    "actions": ["create", "read", "update", "delete", "manage_users"],
+    "limitations": "none"
+  },
+  "manager": {
+    "scope": "department",
+    "actions": ["create", "read", "update", "approve", "manage_team"],
+    "limitations": "cannot_delete_critical_data"
+  },
+  "user": {
+    "scope": "assigned_items",
+    "actions": ["read", "update_own", "comment"],
+    "limitations": "read_only_for_others"
+  },
+  "auditor": {
+    "scope": "audit_scope",
+    "actions": ["read_all", "create_findings", "generate_reports"],
+    "limitations": "read_only_for_execution"
+  }
+};
+```
+
+#### Regras de Segurança
+- 🔒 **Autenticação Obrigatória**: Todas as ações requerem login
+- 👤 **Permissões por Função**: Controle granular de acesso
+- 📋 **Auditoria Completa**: Todas as ações são registradas
+- ⏰ **Sessões Temporárias**: Expiração automática de sessões
+- 🔐 **Dados Criptografados**: Informações sensíveis protegidas
+
+### ⚡ Regras de Automação
+
+#### Notificações Automáticas
+- 📧 **Aprovação Pendente**: E-mail após 24h sem resposta
+- ⏰ **Prazo Vencendo**: Alerta 7 dias antes do vencimento
+- 📋 **Documento Publicado**: Notificação automática para equipe
+- 🔄 **NC Criada**: Atribuição automática baseada em regras
+- 📊 **Relatórios Periódicos**: Geração automática mensal/trimestral
+
+#### Processamento em Lote
+- 📧 **E-mails**: Processamento assíncrono com fila
+- 📋 **Relatórios**: Geração em background
+- 🔄 **Sincronização**: Dados sincronizados automaticamente
+- 📊 **Backups**: Realizados diariamente às 2h
+- 🧹 **Limpeza**: Dados antigos removidos automaticamente
+
+### 📊 Regras de Qualidade
+
+#### Controle de Qualidade
+- ✅ **Validação de Dados**: Todas as entradas são validadas
+- 🔍 **Verificação Dupla**: Aprovações críticas requerem 2 validações
+- 📋 **Checklist Obrigatório**: Para processos críticos
+- ⏱️ **Prazos Monitorados**: Atrasos são escalados automaticamente
+- 📈 **Indicadores Rastreados**: KPIs acompanhados em tempo real
+
+#### Gestão de Não Conformidades
+- 🚨 **Classificação Automática**: Baseada em impacto e urgência
+- ⏰ **Prazos por Severidade**: 24h (crítica) a 30 dias (menor)
+- 🔍 **Análise de Causa Raiz**: Obrigatória para NCs major/crítica
+- ✅ **Verificação de Eficácia**: Todas as ações são verificadas
+- 📊 **Recorrência Monitorada**: NCs recorrentes disparam alertas
+
+### 🎯 SLAs e Prazos
+
+#### Service Level Agreements
+```javascript
+const slaRules = {
+  "document_approval": {
+    "standard": "5 dias úteis",
+    "urgent": "24 horas",
+    "critical": "4 horas",
+    "escalation": "automatic_after_deadline"
+  },
+  "nc_resolution": {
+    "critical": "7 dias",
+    "major": "15 dias",
+    "minor": "30 dias",
+    "escalation": "manager_notification"
+  },
+  "system_availability": {
+    "target": "99.5%",
+    "measurement": "monthly",
+    "compensation": "service_credit"
+  }
+};
+```
+
+#### Prazos de Revisão
+- 📄 **Documentos Críticos**: Revisão obrigatória a cada 6 meses
+- 🔍 **Auditorias**: Planejamento anual obrigatório
+- 👥 **Treinamentos**: Renovação anual para certificações
+- 📋 **Normas**: Atualização conforme mudanças regulatórias
+- 📊 **Indicadores**: Revisão mensal de KPIs
 
 ## 🔧 Desenvolvimento
 

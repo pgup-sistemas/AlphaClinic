@@ -317,6 +317,24 @@ class NotificationService:
         db.session.commit()
         print("Templates de e-mail padrão criados com sucesso!")
 
-# Instâncias globais
-email_service = EmailService()
-notification_service = NotificationService()
+# Instâncias globais (lazy initialization)
+_email_service = None
+_notification_service = None
+
+def get_email_service():
+    """Obtém instância do serviço de e-mail"""
+    global _email_service
+    if _email_service is None:
+        _email_service = EmailService()
+    return _email_service
+
+def get_notification_service():
+    """Obtém instância do serviço de notificação"""
+    global _notification_service
+    if _notification_service is None:
+        _notification_service = NotificationService()
+    return _notification_service
+
+# Para compatibilidade com código existente
+email_service = None
+notification_service = None

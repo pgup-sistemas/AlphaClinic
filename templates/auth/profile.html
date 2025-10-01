@@ -1,0 +1,242 @@
+{% extends "auth_base.html" %}
+
+{% block title %}Meu Perfil - Alphaclin QMS{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-white font-semibold text-lg">
+                                {{ current_user.full_name.split(' ')[0][0] if current_user.full_name.split(' ')|length > 0 else current_user.username[0] }}{{ current_user.full_name.split(' ')[-1][0] if current_user.full_name.split(' ')|length > 1 else (current_user.username[1] if current_user.username|length > 1 else 'U') }}
+                            </span>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">{{ current_user.full_name or current_user.username }}</h1>
+                            <p class="text-gray-600">{{ current_user.role.value.title() }} • {{ current_user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">Último login</p>
+                        <p class="text-sm font-medium text-gray-900">
+                            {{ current_user.last_login.strftime('%d/%m/%Y %H:%M') if current_user.last_login else 'Nunca' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="{% if category == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif category == 'success' %}bg-green-50 border border-green-200 text-green-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %} px-4 py-3 rounded-lg text-sm">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Informações Pessoais -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Informações Pessoais</h2>
+                    </div>
+                    <form method="POST" class="p-6 space-y-4">
+                        <input type="hidden" name="action" value="update_profile">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Nome Completo *
+                                </label>
+                                <input type="text" id="full_name" name="full_name" required
+                                       value="{{ current_user.full_name or '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                                    E-mail *
+                                </label>
+                                <input type="email" id="email" name="email" required
+                                       value="{{ current_user.email or '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Telefone
+                                </label>
+                                <input type="tel" id="phone" name="phone"
+                                       value="{{ current_user.phone or '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="cpf" class="block text-sm font-medium text-gray-700 mb-1">
+                                    CPF
+                                </label>
+                                <input type="text" id="cpf" name="cpf"
+                                       value="{{ current_user.cpf or '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="submit"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                Atualizar Informações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Alterar Senha -->
+                <div class="bg-white shadow rounded-lg mt-6">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Alterar Senha</h2>
+                    </div>
+                    <form method="POST" class="p-6 space-y-4">
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div>
+                            <label for="current_password" class="block text-sm font-medium text-gray-700 mb-1">
+                                Senha Atual *
+                            </label>
+                            <input type="password" id="current_password" name="current_password" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="new_password" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Nova Senha *
+                                </label>
+                                <input type="password" id="new_password" name="new_password" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+
+                            <div>
+                                <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Confirmar Nova Senha *
+                                </label>
+                                <input type="password" id="confirm_password" name="confirm_password" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="submit"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                                Alterar Senha
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Preferências de Notificação -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Notificações</h3>
+                    </div>
+                    <form method="POST" class="p-6 space-y-4">
+                        <input type="hidden" name="action" value="update_preferences">
+
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label for="email_enabled" class="text-sm font-medium text-gray-700">
+                                    E-mail habilitado
+                                </label>
+                                <input type="checkbox" id="email_enabled" name="email_enabled" {{ 'checked' if preferences and preferences.email_enabled else '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <label for="document_notifications" class="text-sm font-medium text-gray-700">
+                                    Documentos
+                                </label>
+                                <input type="checkbox" id="document_notifications" name="document_notifications" {{ 'checked' if preferences and preferences.document_notifications else '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <label for="audit_notifications" class="text-sm font-medium text-gray-700">
+                                    Auditorias e NCs
+                                </label>
+                                <input type="checkbox" id="audit_notifications" name="audit_notifications" {{ 'checked' if preferences and preferences.audit_notifications else '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <label for="capa_notifications" class="text-sm font-medium text-gray-700">
+                                    CAPA
+                                </label>
+                                <input type="checkbox" id="capa_notifications" name="capa_notifications" {{ 'checked' if preferences and preferences.capa_notifications else '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <label for="operational_notifications" class="text-sm font-medium text-gray-700">
+                                    Operacional
+                                </label>
+                                <input type="checkbox" id="operational_notifications" name="operational_notifications" {{ 'checked' if preferences and preferences.operational_notifications else '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <label for="system_notifications" class="text-sm font-medium text-gray-700">
+                                    Sistema
+                                </label>
+                                <input type="checkbox" id="system_notifications" name="system_notifications" {{ 'checked' if preferences and preferences.system_notifications else '' }}
+                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="submit"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                Salvar Preferências
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Ações Rápidas -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Ações Rápidas</h3>
+                    </div>
+                    <div class="p-6 space-y-3">
+                        <a href="{{ url_for('auth.security') }}"
+                           class="block w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium text-sm text-center focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                            Configurações de Segurança
+                        </a>
+
+                        <a href="{{ url_for('main.dashboard') }}"
+                           class="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Voltar ao Dashboard
+                        </a>
+
+                        <a href="{{ url_for('auth.logout') }}"
+                           class="block w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            Sair da Conta
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -982,8 +982,8 @@ class NotificationPreference(db.Model):
     # Frequência
     frequency = db.Column(db.String(20), default='immediate')  # immediate, daily, weekly
 
-    # Relacionamento
-    user = db.relationship('User', backref='notification_preferences')
+    # Relacionamento (one-to-one)
+    user = db.relationship('User', backref=db.backref('notification_preferences', uselist=False))
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1521,3 +1521,78 @@ class CAPA(db.Model):
             CAPA.created_at < datetime(year + 1, 1, 1)
         ).count() + 1
         self.reference_number = f"CAPA-{year}-{count:03d}"
+
+class PasswordResetToken(db.Model):
+    """Tokens para redefinição de senha"""
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token = db.Column(db.String(32), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    user = db.relationship('User', backref='password_reset_tokens')
+
+    __table_args__ = (
+        db.Index('idx_password_reset_tokens_token', 'token'),
+        db.Index('idx_password_reset_tokens_user', 'user_id'),
+        db.Index('idx_password_reset_tokens_expires', 'expires_at'),
+    )
+
+    def is_valid(self):
+        """Verifica se token é válido (não expirado e não usado)"""
+        return datetime.utcnow() < self.expires_at and not self.used
+
+    def mark_used(self):
+        """Marca token como usado"""
+        self.used = True
+
+    @staticmethod
+    def validate_cpf(cpf):
+        """Valida CPF brasileiro"""
+        if not cpf:
+            return True  # CPF opcional
+
+        # Remove caracteres não numéricos
+        cpf = ''.join(filter(str.isdigit, cpf))
+
+        if len(cpf) != 11:
+            return False
+
+        # Verifica se todos os dígitos são iguais
+        if cpf == cpf[0] * 11:
+            return False
+
+        # Calcula dígitos verificadores
+        def calculate_digit(cpf, multiplier):
+            total = sum(int(cpf[i]) * multiplier[i] for i in range(len(multiplier)))
+            remainder = total % 11
+            return 0 if remainder < 2 else 11 - remainder
+
+        # Primeiro dígito
+        multipliers1 = [10, 9, 8, 7, 6, 5, 4, 3, 2]
+        digit1 = calculate_digit(cpf, multipliers1)
+
+        if digit1 != int(cpf[9]):
+            return False
+
+        # Segundo dígito
+        multipliers2 = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]
+        digit2 = calculate_digit(cpf, multipliers2)
+
+        return digit2 == int(cpf[10])
+
+    @staticmethod
+    def validate_phone(phone):
+        """Valida telefone brasileiro"""
+        if not phone:
+            return True  # Telefone opcional
+
+        # Remove caracteres não numéricos
+        phone = ''.join(filter(str.isdigit, phone))
+
+        # Deve ter 10 ou 11 dígitos
+        return len(phone) in [10, 11]

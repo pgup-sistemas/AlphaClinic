@@ -13,7 +13,7 @@
         <div class="flex space-x-3">
             <a href="{{ url_for('documents.verify_signatures', id=document.id) }}"
                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
-                <i class="fas fa-shield-alt mr-2"></i>Verificar Assinaturas
+                <i class="fas fa-star mr-2"></i>Verificar Assinaturas
             </a>
             <a href="{{ url_for('documents.view', id=document.id) }}"
                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
@@ -148,7 +148,7 @@
                     <div class="flex items-center space-x-2">
                         {% if signature.is_valid %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <i class="fas fa-shield-alt mr-1"></i>Verificada
+                            <i class="fas fa-star mr-1"></i>Verificada
                         </span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">

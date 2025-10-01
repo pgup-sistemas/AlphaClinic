@@ -204,7 +204,7 @@ class PermissionService:
                     permission_source = 'team_permission'
 
             # Verificar se nível é suficiente
-            required_level = PermissionLevel(action_str.upper())
+            required_level = PermissionService._map_action_to_level(action_str)
             has_permission = user_level.value >= required_level.value
 
             # Registrar auditoria detalhada
@@ -835,6 +835,23 @@ class PermissionService:
             stats[resource.value] = count
 
         return stats
+
+    @staticmethod
+    def _map_action_to_level(action_str):
+        """Mapeia string de ação para nível de permissão"""
+        action_mapping = {
+            'create': PermissionLevel.WRITE,  # CREATE maps to WRITE level
+            'read': PermissionLevel.READ,
+            'update': PermissionLevel.WRITE,
+            'delete': PermissionLevel.DELETE,
+            'approve': PermissionLevel.ADMIN,
+            'sign': PermissionLevel.ADMIN,
+            'export': PermissionLevel.READ,
+            'import': PermissionLevel.WRITE,
+            'configure': PermissionLevel.ADMIN
+        }
+
+        return action_mapping.get(action_str.lower(), PermissionLevel.NONE)
 
 # Decorators de conveniência para uso comum
 def require_admin(f):

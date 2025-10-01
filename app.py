@@ -47,66 +47,31 @@ def find_available_port(start_port=8000):
     return start_port  # Retornar a original se nenhuma disponível
 
 def check_network_connectivity():
-    """Verifica conectividade de rede e firewall"""
-    local_ip = get_local_ip()
+    """Verifica conectividade de rede e firewall (modo produção)"""
     port = 8000
-
-    print("Verificando conectividade de rede...")
 
     # Testar se a porta padrão está disponível
     try:
         import socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex((local_ip, port))
+        result = sock.connect_ex(('127.0.0.1', port))
         if result == 0:
-            print(f"  [AVISO] Porta {port} ja esta em uso em {local_ip}")
-            print("  Procurando porta alternativa...")
-
             # Tentar encontrar porta disponível
             available_port = find_available_port(port + 1)
             if available_port != port:
-                print(f"  [OK] Porta alternativa encontrada: {available_port}")
                 return available_port
-            else:
-                print(f"  [ERRO] Nenhuma porta alternativa disponivel")
-                return port
-        else:
-            print(f"  [OK] Porta {port} disponivel em {local_ip}")
-            return port
         sock.close()
-    except Exception as e:
-        print(f"  [ERRO] Nao foi possivel verificar porta: {e}")
+        return port
+    except Exception:
         return port
 
-    # Verificar interfaces de rede
-    try:
-        hostname = socket.gethostname()
-        local_ips = socket.gethostbyname_ex(hostname)[2]
-        print(f"  Interfaces de rede encontradas: {local_ips}")
-    except Exception as e:
-        print(f"  [ERRO] Nao foi possivel obter interfaces: {e}")
-
 def print_startup_info(port=None):
-    """Exibe informações de inicialização do sistema"""
+    """Exibe informações de inicialização do sistema (modo produção)"""
     if port is None:
         port = 8000
 
-    print("\n" + "="*60)
-    print("ALPHACLIN QMS - SISTEMA INICIADO COM SUCESSO!")
-    print("="*60)
-    print(f"Acesso Local:     http://localhost:{port}")
-    print(f"Usuario Admin:    admin")
-    print(f"Senha Admin:      admin123")
-    print("="*60)
-    print("Instrucoes para Teste:")
-    print(f"   1. Abra http://localhost:{port} no navegador")
-    print("   2. Use as credenciais acima para fazer login")
-    print("="*60)
-    print("Dicas para Troubleshooting:")
-    print("   - Se nao conseguir acessar:")
-    print(f"   * Certifique-se de que nao ha outro processo usando a porta {port}")
-    print("   * Verifique se o firewall permite conexoes locais")
-    print("="*60 + "\n")
+    print("Alphaclin QMS iniciado com sucesso!")
+    print(f"Servidor rodando em: http://localhost:{port}")
 
 def seed_admin_user():
     """Create default admin user and sample operational data"""
@@ -130,7 +95,7 @@ def seed_admin_user():
         )
         db.session.add(admin)
         db.session.commit()
-        print("Admin user created with username: admin, password: admin123")
+        # Admin user created silently
 
     # Create sample operational data if it doesn't exist
     if CIPAMeeting.query.count() == 0:
@@ -369,7 +334,7 @@ def seed_admin_user():
         # Close the CAPA
         sample_capa.status = CAPAStatus.CLOSED
 
-        print("Sample CAPA data created successfully")
+        # Sample CAPA data created silently
 
         # Create sample document for signature testing
         sample_document = Document.query.filter_by(title='Procedimento de Calibração de Equipamentos').first()
@@ -429,13 +394,14 @@ def seed_admin_user():
             reading_signature.signature_data = reading_signature.generate_signature_hash(content_to_sign)
             db.session.add(reading_signature)
 
-            print("Sample document and signatures created successfully")
+            # Sample document and signatures created silently
 
     # Create default email templates
     try:
-        from email_service import notification_service
+        from email_service import get_notification_service
+        notification_service = get_notification_service()
         notification_service.create_default_templates()
-        print("Email templates created successfully")
+        # Email templates created silently
     except Exception as e:
         print(f"Warning: Could not create email templates: {e}")
 
@@ -454,12 +420,12 @@ def seed_admin_user():
                 system_notifications=True
             )
             db.session.add(admin_prefs)
-        print("Notification preferences created successfully")
+        # Notification preferences created silently
     except Exception as e:
         print(f"Warning: Could not create notification preferences: {e}")
 
     db.session.commit()
-    print("Sample operational data created successfully")
+    # Sample operational data created silently
 
 def create_app():
     app = Flask(__name__)
@@ -478,7 +444,7 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         from models import User
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
     login_manager.login_message = 'Por favor, faça login para acessar esta página.'
     
     # Register blueprints
@@ -568,7 +534,6 @@ if __name__ == '__main__':
     # Exibir informações de inicialização
     print_startup_info(port)
 
-    # Iniciar servidor apenas em localhost
-    print("Iniciando servidor Flask...")
-    print(f"Configuracao: host='127.0.0.1', port={port}")
-    app.run(host='127.0.0.1', port=port, debug=True)
+    # Iniciar servidor em modo produção
+    print(f"Iniciando servidor na porta {port}...")
+    app.run(host='127.0.0.1', port=port, debug=False)

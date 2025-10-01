@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="#2563eb"/>
-  <rect x="20" y="25" width="60" height="50" fill="white" rx="5"/>
-  <rect x="25" y="30" width="10" height="15" fill="#dc2626"/>
-  <rect x="40" y="30" width="10" height="15" fill="#dc2626"/>
-  <rect x="55" y="30" width="10" height="15" fill="#dc2626"/>
-  <rect x="70" y="30" width="5" height="15" fill="#dc2626"/>
-  <rect x="30" y="50" width="40" height="3" fill="#dc2626"/>
-  <rect x="30" y="56" width="30" height="3" fill="#dc2626"/>
-  <rect x="30" y="62" width="35" height="3" fill="#dc2626"/>
-  <text x="50" y="85" text-anchor="middle" fill="white" font-family="Arial" font-size="12" font-weight="bold">QMS</text>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo circular azul -->
+  <circle cx="16" cy="16" r="15" fill="#2563eb" stroke="#1d4ed8" stroke-width="1"/>
+
+  <!-- Estrela de qualidade dourada -->
+  <path d="M16 4L19.09 11.26L26 12L20 18L21.18 25L16 22.27L10.82 25L12 18L6 12L12.91 11.26L16 4Z"
+        fill="#fbbf24" stroke="#f59e0b" stroke-width="0.5" stroke-linejoin="round"/>
+
+  <!-- Brilho da estrela -->
+  <path d="M16 6L17.5 10.5L20 9L17 13L21 13L16 16L19 20L16 15L13 20L16 16L11 13L15 13L12 9L16 6Z"
+        fill="#fef3c7" opacity="0.6"/>
 </svg>
